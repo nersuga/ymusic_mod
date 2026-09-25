@@ -116,16 +116,16 @@ Electron-приложение хранит код в `resources\app.asar`, а в
 
 ```mermaid
 flowchart LR
-    exe["Яндекс Музыка.exe<br/><sub>хэш заголовка asar</sub>"] --> asar
+    exe["Яндекс Музыка.exe<br/>хэш заголовка asar"] --> boot
     subgraph asar["app.asar"]
-        boot["ymmods-boot.js<br/><sub>новая точка входа</sub>"] --> index["index.js<br/><sub>оригинальное приложение</sub>"]
+        boot["ymmods-boot.js<br/>точка входа мода"] --> index["index.js<br/>само приложение"]
     end
     boot --> main
     subgraph appdata["%APPDATA%\YandexMusic"]
-        main["modloader\main.js<br/><sub>главный процесс</sub>"] --> page["features.js · settings-ui.js<br/><sub>страница</sub>"]
+        cfg[("config.json")] -.-> main
+        main["modloader\main.js<br/>главный процесс"] --> page["features.js<br/>settings-ui.js"]
         main --> mini["miniplayer.html"]
-        page --> mods["mods\*.css, *.js<br/><sub>пользовательские моды</sub>"]
-        cfg[("mods\config.json")] -.-> main
+        page --> mods["mods\*.css, *.js<br/>ваши моды"]
     end
 ```
 
