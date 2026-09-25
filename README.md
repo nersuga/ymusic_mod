@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/%D0%AF%D0%BD%D0%B4%D0%B5%D0%BA%D1%81%20%D0%9C%D1%83%D0%B7%D1%8B%D0%BA%D0%B0-5.121-141414?style=for-the-badge&logoColor=white" alt="Яндекс Музыка 5.121"/>
   <img src="https://img.shields.io/badge/Electron-mod-141414?style=for-the-badge&logo=electron&logoColor=9FEAF9" alt="Electron"/>
   <img src="https://img.shields.io/badge/%D0%B0%D0%B4%D0%BC%D0%B8%D0%BD-%D0%BD%D0%B5%20%D0%BD%D1%83%D0%B6%D0%B5%D0%BD-141414?style=for-the-badge" alt="Права администратора не нужны"/>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-141414?style=for-the-badge&logo=gnu&logoColor=white" alt="GPL-3.0"/></a>
 </p>
 
 <b>Неофициальные моды для десктопного клиента Яндекс Музыки.</b><br/>
@@ -208,6 +209,14 @@ build.ps1             сборка установщика
 ```
 
 </details>
+
+---
+
+## 📄 Лицензия
+
+[GNU GPL v3.0](LICENSE). Код можно свободно использовать, изменять и распространять, но изменённые версии при распространении должны оставаться открытыми и под той же лицензией.
+
+Лицензия распространяется только на код этого репозитория, не на Яндекс Музыку.
 
 ---
 
