@@ -1,0 +1,26 @@
+# Build output
+dist/
+obj/
+
+# Signing material: never commit certificates or keys
+*.pfx
+*.p12
+*.cer
+*.key
+*.snk
+
+# Local state of an installed mod (if copied here by accident)
+config.json
+backup/
+*.asar
+*.log
+last-patch.json
+version.txt
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

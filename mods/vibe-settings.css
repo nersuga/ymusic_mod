@@ -1,0 +1,205 @@
+/* Редизайн модалки «Настроить Мою волну» под новый стиль страницы «Моя волна».
+   Классы у Яндекса хешированные, поэтому селекторы по data-test-id и [class*="Имя_"]. */
+
+/* ── Панель ─────────────────────────────────────────── */
+[class*="VibeSettingsModal_root"] {
+  background: linear-gradient(180deg, rgba(18, 18, 18, .62) 0%, rgba(0, 0, 0, .82) 100%) !important;
+  backdrop-filter: blur(48px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, .07) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+  animation: ymVibeModalIn .28s cubic-bezier(.2, .8, .2, 1);
+  /* высота по содержимому, но не больше окна */
+  top: 96px !important;
+  bottom: auto !important;
+  height: auto !important;
+  max-height: calc(100% - 112px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+[class*="VibeSettingsModal_root"] > [class*="VibeSettingsModal_modalContent"] {
+  height: auto !important;
+  min-height: 0 !important;
+}
+@keyframes ymVibeModalIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+[class*="VibeSettingsModal_modalContent"] {
+  padding: 22px 24px 24px !important;
+  scrollbar-width: none;
+}
+[class*="VibeSettingsModal_modalContent"]::-webkit-scrollbar { display: none; }
+
+/* ── Заголовок и кнопки в шапке ─────────────────────── */
+[class*="VibeSettingsModal_header"] {
+  align-items: center !important;
+  margin: 0 !important;
+}
+[data-test-id="VIBE_SETTINGS_TITLE"] {
+  font-family: "YSMusic Headline", sans-serif !important;
+  font-size: 28px !important;
+  line-height: 32px !important;
+  letter-spacing: -.01em;
+  background: var(--ym-controls-color-primary-text-vibe, linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.72)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+/* Кнопки сброса и закрытия — родные, только без собственного размытия */
+[class*="VibeSettingsModal_actions"] { align-items: center !important; }
+
+/* ── Разделы ────────────────────────────────────────── */
+[class*="VibeSettingsModal_content"] [class*="VibeRestrictions_root"] {
+  gap: 22px !important;
+  margin-top: 18px !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionBlock_root"] {
+  gap: 10px !important;
+  margin: 0 !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionBlock_root"] > span,
+[class*="VibeSettingsModal_content"] [class*="RestrictionBlock_root"] > h4 {
+  font-family: "YS Text", sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 14px !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, .42) !important;
+  margin: 0 !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionBlock_restrictions"] {
+  gap: 8px !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_rippleContainer"] { display: none !important; }
+/* У кнопок своё размытие фона — внутри стеклянной панели оно даёт тёмные «дыры» */
+[class*="VibeSettingsModal_content"] button { backdrop-filter: none !important; }
+
+/* ── Текстовые «таблетки»: занятие и язык ────────────── */
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"] {
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+  color: rgba(255, 255, 255, .88) !important;
+  transition: background .2s, border-color .2s, color .2s, transform .15s !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"] [class*="RestrictionButton_title"] {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: inherit !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"]:hover {
+  background: rgba(255, 255, 255, .08) !important;
+  border-color: rgba(255, 255, 255, .32) !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"]:active { transform: scale(.96); }
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"][aria-pressed="true"] {
+  background: var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+  border-color: var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+  color: #000 !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_textButton"][aria-pressed="true"] [class*="RestrictionButton_title"] {
+  font-weight: 600 !important;
+}
+
+/* ── Характер: как плитки колеса, без карточек ──────── */
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButton"] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 20px !important;
+  height: auto !important;
+  padding: 10px 6px 8px !important;
+  gap: 8px !important;
+  transition: background .2s, transform .15s !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButtonImage"] {
+  width: 52px !important;
+  height: 52px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  position: relative;
+  z-index: 1;
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1) !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButton"]:hover [class*="RestrictionButton_diversityButtonImage"] {
+  transform: translateY(-2px) scale(1.06);
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButton"] [class*="RestrictionButton_title"] {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, .88) !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButton"][aria-pressed="true"] {
+  background: rgba(255, 255, 0, .06) !important;
+  box-shadow: inset 0 0 0 2px var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_diversityButton"][aria-pressed="true"] [class*="RestrictionButton_title"] {
+  color: var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+}
+
+/* ── Настроение: светящиеся кружки ──────────────────── */
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergy_"],
+[class*="VibeSettingsModal_content"] [data-test-id="VIBE_SETTINGS_MOOD_ENERGY_BUTTON"] {
+  gap: 10px !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergyButton"] {
+  width: 52px !important;
+  height: 52px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  outline: 2px solid transparent !important;
+  outline-offset: 4px !important;
+  position: relative !important;
+  overflow: visible !important;
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1), outline-color .2s !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergyButtonImage"] {
+  width: 52px !important;
+  height: 52px !important;
+  position: relative;
+  z-index: 1;
+  transition: filter .25s !important;
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergyButton"]:hover {
+  transform: scale(1.08);
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergyButton"]:hover [class*="RestrictionButton_moodEnergyButtonImage"] {
+  filter: saturate(1.15) brightness(1.08);
+}
+[class*="VibeSettingsModal_content"] [class*="RestrictionButton_moodEnergyButton"][aria-pressed="true"] {
+  outline-color: var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+}
+[class*="VibeSettingsModal_content"] [data-test-id="VIBE_SETTINGS_MOOD_ENERGY_BUTTON"] [class*="RestrictionButton_title"] {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, .6) !important;
+  transition: color .2s !important;
+}
+[class*="VibeSettingsModal_content"] [data-test-id="VIBE_SETTINGS_MOOD_ENERGY_BUTTON"]:hover [class*="RestrictionButton_title"] {
+  color: rgba(255, 255, 255, .92) !important;
+}
+[class*="VibeSettingsModal_content"] [data-test-id="VIBE_SETTINGS_MOOD_ENERGY_BUTTON"]:has([aria-pressed="true"]) [class*="RestrictionButton_title"] {
+  color: var(--ym-controls-color-primary-default-enabled, #ff0) !important;
+}
+
+/* ── Свечение: размытая копия картинки позади неё (создаёт vibe-settings.js) ── */
+[class*="VibeSettingsModal_content"] img.ym-glow {
+  position: absolute !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  object-fit: contain;
+  filter: blur(14px) saturate(1.8) !important;
+  opacity: .45;
+  transform: translateY(4px) scale(1.05);
+  transition: opacity .3s, transform .3s cubic-bezier(.2, .8, .2, 1) !important;
+}
+[class*="VibeSettingsModal_content"] button:hover > img.ym-glow,
+[class*="VibeSettingsModal_content"] button[aria-pressed="true"] > img.ym-glow {
+  opacity: .85;
+  transform: translateY(6px) scale(1.15);
+}

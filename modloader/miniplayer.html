@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mini player</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "YS Text", "Segoe UI", sans-serif; user-select: none; }
+  .pill {
+    /* 16px of transparent window around the pill so the shadow fits inside the window and is not cut */
+    position: absolute; inset: 16px; border-radius: 24px; overflow: hidden; display: flex; align-items: center; gap: 12px;
+    padding: 0 10px 0 8px; color: #fff; background: #111; box-shadow: 0 4px 12px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.08);
+    -webkit-app-region: drag;
+  }
+  .bg { position: absolute; inset: -30px; background: center / cover no-repeat var(--cover, none); filter: blur(28px) saturate(1.6); opacity: .55; transform: scale(1.1); transition: background-image .4s; }
+  .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.35), rgba(0,0,0,.65)); }
+  .cover { position: relative; width: 64px; height: 64px; border-radius: 14px; background: #222 center / cover no-repeat var(--cover, none); flex: none; box-shadow: 0 4px 14px rgba(0,0,0,.4); -webkit-app-region: no-drag; cursor: pointer; }
+  .meta { position: relative; min-width: 0; flex: 1; }
+  .title { font-weight: 700; font-size: 14px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { font-size: 12px; line-height: 16px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .controls { position: relative; display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
+  button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: rgba(255,255,255,.72); display: grid; place-items: center; cursor: pointer; transition: background-color .15s, color .15s, transform .12s; padding: 0; }
+  button:hover { background: rgba(255,255,255,.1); color: #fff; }
+  button:active { transform: scale(.92); }
+  button svg { width: 20px; height: 20px; }
+  .play svg { width: 22px; height: 22px; }
+  .play { width: 40px; height: 40px; background: #ff0; color: #000; margin: 0 2px; }
+  .play:hover { background: #ffff80; color: #000; }
+  .close { position: absolute; top: 4px; right: 6px; width: 18px; height: 18px; opacity: 0; transition: opacity .15s; -webkit-app-region: no-drag; }
+  .close svg { width: 14px; height: 14px; }
+  .pill:hover .close { opacity: 1; }
+  .empty .meta .title { color: rgba(255,255,255,.5); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="pill empty" id="pill">
+  <div class="bg"></div><div class="shade"></div>
+  <div class="cover" id="cover"></div>
+  <div class="meta"><div class="title" id="title">—</div><div class="artist" id="artist"></div></div>
+  <div class="controls">
+    <button id="prev" aria-label="Previous"><svg><use href="#previous_xxs"/></svg></button>
+    <button id="play" class="play" aria-label="Play"><svg><use id="playIcon" href="#play_filled_xs"/></svg></button>
+    <button id="next" aria-label="Next"><svg><use href="#next_xxs"/></svg></button>
+    <button id="like" aria-label="Like"><svg><use id="likeIcon" href="#like_xxs"/></svg></button>
+  </div>
+  <button class="close" id="close" aria-label="Close"><svg><use href="#close_xxs"/></svg></button>
+</div>
+<script>
+  // Icons are the app's own sprite symbols (icons/sprite.svg in app.asar), handed over by the mod
+  window.ymMini.getIcons().then((icons) => {
+    const holder = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    holder.setAttribute("style", "display:none");
+    holder.innerHTML = Object.values(icons || {}).join("");
+    document.body.prepend(holder);
+  });
+  const el = (id) => document.getElementById(id);
+  const render = (s) => {
+    const has = !!(s && s.title);
+    el("pill").classList.toggle("empty", !has);
+    el("title").textContent = has ? s.title : "Яндекс Музыка";
+    el("artist").textContent = has ? s.artist || "" : "";
+    document.documentElement.style.setProperty("--cover", s && s.cover ? `url("${s.cover}")` : "none");
+    el("playIcon").setAttribute("href", s && s.playing ? "#pause_filled_xs" : "#play_filled_xs");
+    el("likeIcon").setAttribute("href", s && s.liked ? "#liked_xxs" : "#like_xxs");
+  };
+  render(null);
+  window.ymMini.onState(render);
+  el("prev").onclick = () => window.ymMini.cmd("prev");
+  el("next").onclick = () => window.ymMini.cmd("next");
+  el("play").onclick = () => window.ymMini.cmd("playPause");
+  el("like").onclick = () => window.ymMini.cmd("like");
+  el("close").onclick = () => window.ymMini.close();
+  el("cover").ondblclick = () => window.ymMini.showApp();
+</script>
+</body>
+</html>

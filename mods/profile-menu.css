@@ -1,0 +1,23 @@
+/* Меню профиля (Яндекс ID) в стиле окна «Настроить Мою волну»: стекло вместо серой карточки.
+   Прозрачный фон внутри iframe делает загрузчик — только пока этот файл включён. */
+.UserWidget-Dialog {
+  background: linear-gradient(180deg, rgba(18, 18, 18, .62) 0%, rgba(0, 0, 0, .82) 100%) !important;
+  backdrop-filter: blur(48px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, .07) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+  overflow: hidden !important;
+}
+.UserWidget-Dialog_visible {
+  animation: ymProfileIn .28s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes ymProfileIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+.UserWidget-Content,
+.UserWidget-Iframe {
+  background: transparent !important;
+}
+/* iframe inline по умолчанию — отсюда был зазор в 1px */
+.UserWidget-Iframe { display: block; }

@@ -1,0 +1,60 @@
+/* Кнопки окна (свернуть / развернуть / закрыть) в стиле Яндекс Музыки вместо значков Windows.
+   Как в интерфейсе приложения: контурные иконки со скруглёнными концами, круглые кнопки
+   с полупрозрачной подложкой. Родные SVG скрываются, новые рисуются маской — разметку не трогаем. */
+[class*="TitleBar_root"] {
+  gap: 4px;
+  padding: 4px 8px 0 0;
+  box-sizing: border-box;
+  align-items: center;
+}
+[class*="TitleBar_button"] {
+  position: relative;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  color: rgba(255, 255, 255, .5) !important;
+  background: transparent !important;
+  transition: background-color .15s, color .15s, transform .15s !important;
+}
+[class*="TitleBar_button"] > svg { display: none !important; }
+[class*="TitleBar_button"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: var(--ym-wb-icon) center / contain no-repeat;
+  mask: var(--ym-wb-icon) center / contain no-repeat;
+}
+[class*="TitleBar_button"]:hover {
+  color: rgba(255, 255, 255, .92) !important;
+  background: rgba(255, 255, 255, .08) !important;
+}
+[class*="TitleBar_button"]:active {
+  background: rgba(255, 255, 255, .14) !important;
+  transform: scale(.94);
+}
+
+/* Свернуть */
+[class*="TitleBar_button"]:nth-child(1) {
+  --ym-wb-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'><path d='M5 10h10'/></svg>");
+}
+/* Развернуть */
+[class*="TitleBar_button"]:nth-child(2) {
+  --ym-wb-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'><rect x='5' y='5' width='10' height='10' rx='3'/></svg>");
+}
+/* Восстановить (окно развёрнуто; атрибут ставит мод) */
+html[data-ym-maximized] [class*="TitleBar_button"]:nth-child(2) {
+  --ym-wb-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='7' width='9' height='9' rx='2.5'/><path d='M7.5 4h6a2.5 2.5 0 0 1 2.5 2.5v6'/></svg>");
+}
+/* Закрыть */
+[class*="TitleBar_closeButton"] {
+  --ym-wb-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'><path d='M5.5 5.5l9 9M14.5 5.5l-9 9'/></svg>") !important;
+}
+[class*="TitleBar_closeButton"]:hover {
+  background: var(--ym-controls-color-accent-default-enabled, #d5594d) !important;
+  color: #fff !important;
+}

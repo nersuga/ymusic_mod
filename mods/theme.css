@@ -1,0 +1,10 @@
+/* Пример CSS-мода. Изменения применяются сразу после сохранения файла. */
+
+/* Тонкие скруглённые полосы прокрутки */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 204, 0, .45); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 204, 0, .8); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Жёлтое выделение текста */
+::selection { background: #ffcc00; color: #000; }
