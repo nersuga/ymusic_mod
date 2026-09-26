@@ -18,18 +18,40 @@
   .meta { position: relative; min-width: 0; flex: 1; }
   .title { font-weight: 700; font-size: 14px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .artist { font-size: 12px; line-height: 16px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .progress { display: none; }
   .controls { position: relative; display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
-  button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: rgba(255,255,255,.72); display: grid; place-items: center; cursor: pointer; transition: background-color .15s, color .15s, transform .12s; padding: 0; }
+  button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: rgba(255,255,255,.72); display: grid; place-items: center; cursor: pointer; transition: background-color .15s, color .15s, transform .12s, opacity .15s; padding: 0; }
   button:hover { background: rgba(255,255,255,.1); color: #fff; }
   button:active { transform: scale(.92); }
   button svg { width: 20px; height: 20px; }
   .play svg { width: 22px; height: 22px; }
   .play { width: 40px; height: 40px; background: #ff0; color: #000; margin: 0 2px; }
   .play:hover { background: #ffff80; color: #000; }
-  .close { position: absolute; top: 4px; right: 6px; width: 18px; height: 18px; opacity: 0; transition: opacity .15s; -webkit-app-region: no-drag; }
-  .close svg { width: 14px; height: 14px; }
-  .pill:hover .close { opacity: 1; }
+  /* window buttons: pin, size, close — shown on hover */
+  .window { position: absolute; top: 4px; right: 6px; display: flex; gap: 2px; opacity: 0; transition: opacity .15s; -webkit-app-region: no-drag; }
+  .window button { width: 20px; height: 20px; }
+  .window svg { width: 14px; height: 14px; }
+  .window .on { color: #ff0; }
+  .pill:hover .window, .window:focus-within { opacity: 1; }
   .empty .meta .title { color: rgba(255,255,255,.5); font-weight: 500; }
+
+  /* ── Large card ── */
+  .large .pill { flex-direction: column; align-items: stretch; gap: 0; padding: 16px; border-radius: 28px; }
+  .large .shade { background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.7)); }
+  .large .cover { width: 100%; height: auto; aspect-ratio: 1; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .large .meta { flex: none; margin: 14px 2px 0; }
+  .large .title { font-size: 16px; line-height: 20px; }
+  .large .artist { font-size: 13px; line-height: 18px; }
+  .large .progress { display: block; position: relative; margin: 10px 2px 0; -webkit-app-region: no-drag; }
+  .bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.18); overflow: hidden; }
+  .fill { height: 100%; width: 0; background: #fff; border-radius: 2px; }
+  .times { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; line-height: 14px; color: rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+  .large .controls { justify-content: center; gap: 10px; margin-top: 6px; }
+  .large .controls button:not(.play) { width: 38px; height: 38px; }
+  .large .controls svg { width: 22px; height: 22px; }
+  .large .play { width: 52px; height: 52px; }
+  .large .play svg { width: 26px; height: 26px; }
+  .large .window { top: 22px; right: 22px; padding: 2px; border-radius: 12px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); }
 </style>
 </head>
 <body>
@@ -37,13 +59,18 @@
   <div class="bg"></div><div class="shade"></div>
   <div class="cover" id="cover"></div>
   <div class="meta"><div class="title" id="title">—</div><div class="artist" id="artist"></div></div>
+  <div class="progress"><div class="bar"><div class="fill" id="fill"></div></div><div class="times"><span id="pos">0:00</span><span id="dur">0:00</span></div></div>
   <div class="controls">
     <button id="prev" aria-label="Previous"><svg><use href="#previous_xxs"/></svg></button>
     <button id="play" class="play" aria-label="Play"><svg><use id="playIcon" href="#play_filled_xs"/></svg></button>
     <button id="next" aria-label="Next"><svg><use href="#next_xxs"/></svg></button>
     <button id="like" aria-label="Like"><svg><use id="likeIcon" href="#like_xxs"/></svg></button>
   </div>
-  <button class="close" id="close" aria-label="Close"><svg><use href="#close_xxs"/></svg></button>
+  <div class="window">
+    <button id="pin" aria-label="Always on top"><svg><use id="pinIcon" href="#pin_xxs"/></svg></button>
+    <button id="size" aria-label="Size"><svg><use id="sizeIcon" href="#fullscreen_xs"/></svg></button>
+    <button id="close" aria-label="Close"><svg><use href="#close_xxs"/></svg></button>
+  </div>
 </div>
 <script>
   // Icons are the app's own sprite symbols (icons/sprite.svg in app.asar), handed over by the mod
@@ -54,21 +81,54 @@
     document.body.prepend(holder);
   });
   const el = (id) => document.getElementById(id);
+  const TEXT = {
+    ru: { pin: "Поверх всех окон", unpin: "Не поверх окон", big: "Крупный вид", small: "Компактный вид", close: "Закрыть" },
+    en: { pin: "Always on top", unpin: "Not on top", big: "Large view", small: "Compact view", close: "Close" },
+    kk: { pin: "Барлық терезелердің үстінде", unpin: "Үстінде емес", big: "Үлкен көрініс", small: "Шағын көрініс", close: "Жабу" },
+    uz: { pin: "Barcha oynalar ustida", unpin: "Ustida emas", big: "Katta ko‘rinish", small: "Ixcham ko‘rinish", close: "Yopish" },
+  };
+  const time = (s) => { s = Math.max(0, Math.floor(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  let state = null, stateAt = 0;
   const render = (s) => {
+    state = s; stateAt = performance.now();
     const has = !!(s && s.title);
+    const t = TEXT[((s && s.lang) || "").slice(0, 2)] || TEXT.ru;
+    document.body.classList.toggle("large", !!(s && s.large));
     el("pill").classList.toggle("empty", !has);
     el("title").textContent = has ? s.title : "Яндекс Музыка";
     el("artist").textContent = has ? s.artist || "" : "";
     document.documentElement.style.setProperty("--cover", s && s.cover ? `url("${s.cover}")` : "none");
     el("playIcon").setAttribute("href", s && s.playing ? "#pause_filled_xs" : "#play_filled_xs");
     el("likeIcon").setAttribute("href", s && s.liked ? "#liked_xxs" : "#like_xxs");
+    const onTop = !s || s.onTop !== false;
+    el("pin").classList.toggle("on", onTop);
+    el("pinIcon").setAttribute("href", onTop ? "#pin_filled_xxs" : "#pin_xxs");
+    el("pin").title = onTop ? t.unpin : t.pin;
+    el("sizeIcon").setAttribute("href", s && s.large ? "#arrowDown_xxs" : "#fullscreen_xs");
+    el("size").title = s && s.large ? t.small : t.big;
+    el("close").title = t.close;
+    drawProgress();
   };
+  // The page reports the position about once a second: in between it is extrapolated while playing
+  const drawProgress = () => {
+    if (!document.body.classList.contains("large")) return;
+    const dur = (state && state.duration) || 0;
+    let pos = (state && state.position) || 0;
+    if (state && state.playing) pos += (performance.now() - stateAt) / 1000;
+    pos = Math.min(pos, dur);
+    el("fill").style.width = dur ? (pos / dur) * 100 + "%" : "0";
+    el("pos").textContent = time(pos);
+    el("dur").textContent = time(dur);
+  };
+  setInterval(drawProgress, 250);
   render(null);
   window.ymMini.onState(render);
   el("prev").onclick = () => window.ymMini.cmd("prev");
   el("next").onclick = () => window.ymMini.cmd("next");
   el("play").onclick = () => window.ymMini.cmd("playPause");
   el("like").onclick = () => window.ymMini.cmd("like");
+  el("pin").onclick = () => window.ymMini.cmd("miniPin");
+  el("size").onclick = () => window.ymMini.cmd("miniSize");
   el("close").onclick = () => window.ymMini.close();
   el("cover").ondblclick = () => window.ymMini.showApp();
 </script>

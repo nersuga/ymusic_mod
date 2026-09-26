@@ -7,6 +7,10 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const childProcess = require("child_process");
+const thumbar = require("./thumbar");
+const { DiscordPresence, activityFor } = require("./discord");
+const { LastFm } = require("./lastfm");
+const storage = require("./storage");
 
 const { app, ipcMain, session, shell, webFrameMain, Tray, MenuItem, BrowserWindow, dialog, globalShortcut, screen } = electron;
 const MOD_HOME = __dirname;
@@ -57,9 +61,34 @@ module.exports = ({ appRequire, appDir } = {}) => {
       volumeUp: "Ctrl+Alt+Up",
       volumeDown: "Ctrl+Alt+Down",
       miniPlayer: "Ctrl+Alt+M",
+      // no defaults: Ctrl+Alt+letter is AltGr+letter on many keyboard layouts
+      shuffle: "",
+      repeat: "",
+      dislike: "",
     },
     miniPlayerBounds: null,
+    miniPlayerOnTop: true,
+    miniPlayerLarge: false,
+    thumbarButtons: true,
+    zoomFactor: 1,
+    showQuality: true,
+    playlistSearch: true,
+    discordRpc: false,
+    discordClientId: "",
+    discordShowPaused: false,
+    lastfmEnabled: false,
+    lastfmApiKey: "",
+    lastfmApiSecret: "",
+    lastfmSession: "",
+    lastfmUser: "",
+    sessionDataDir: "", // player data (downloads, caches, login) outside %APPDATA%\YandexMusic; "" = default place
+    downloadsMove: null, // { target } — the move of the player data, applied at the next start
+    downloadsMoveResult: null,
   };
+  // Set only by the main process (dedicated IPC), never by a config patch from the page
+  const PROTECTED_KEYS = new Set(["lastfmSession", "lastfmUser", "sessionDataDir", "downloadsMove", "downloadsMoveResult", "wheelItems", "miniPlayerBounds"]);
+  // Not written into exported settings files: credentials
+  const PRIVATE_KEYS = ["lastfmSession", "lastfmUser", "lastfmApiSecret", "sessionDataDir", "downloadsMove", "downloadsMoveResult"];
   const config = () => {
     try {
       const file = JSON.parse(fs.readFileSync(configFile, "utf8").replace(/^﻿/, ""));
@@ -79,6 +108,26 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (cfg.__invalid) throw new Error("config.json is invalid, not overwriting");
     fs.writeFileSync(configFile, JSON.stringify(cfg, null, 2));
   };
+
+  // ── Player data folder (downloads, caches, login): a move scheduled from the settings runs here, before any
+  //    window opens the files; then Chromium's session data is pointed to the chosen folder ──
+  try {
+    const cfg = config();
+    const userData = app.getPath("userData");
+    if (cfg.downloadsMove && typeof cfg.downloadsMove === "object" && !cfg.__invalid) {
+      const from = cfg.sessionDataDir && fs.existsSync(cfg.sessionDataDir) ? cfg.sessionDataDir : userData;
+      const to = cfg.downloadsMove.target ? path.resolve(cfg.downloadsMove.target) : userData;
+      const result = storage.moveSessionData(from, to, userData, log);
+      if (result.ok) cfg.sessionDataDir = path.resolve(to).toLowerCase() === path.resolve(userData).toLowerCase() ? "" : to;
+      cfg.downloadsMove = null;
+      cfg.downloadsMoveResult = { ...result, at: Date.now() };
+      saveConfig(cfg);
+    }
+    if (cfg.sessionDataDir) {
+      if (fs.existsSync(cfg.sessionDataDir)) app.setPath("sessionData", cfg.sessionDataDir);
+      else log.error("player data folder is missing (drive not connected?), using the default place", cfg.sessionDataDir);
+    }
+  } catch (e) { log.error("player data folder", e); }
 
   const isAppUrl = (url) => typeof url === "string" && url.startsWith(APP_URL_PREFIX);
   const isAppContents = (wc) => wc && !wc.isDestroyed() && isAppUrl(wc.getURL());
@@ -120,7 +169,10 @@ module.exports = ({ appRequire, appDir } = {}) => {
   // ── Player state (the app's own IPC channel) ─────────────────────────────
   let isPlaying = false;
   ipcMain.on("desktop:player:state", (_event, playerState) => {
-    if (playerState && typeof playerState.isPlaying === "boolean") isPlaying = playerState.isPlaying;
+    if (!playerState || typeof playerState.isPlaying !== "boolean") return;
+    const changed = playerState.isPlaying !== isPlaying;
+    isPlaying = playerState.isPlaying;
+    if (changed) updateThumbar();
   });
 
   // ── Tray: unload UI while paused, trim memory while playing ─────────────
@@ -153,7 +205,11 @@ module.exports = ({ appRequire, appDir } = {}) => {
     restoreUi = restore;
     mainWin = win;
     win.on("hide", () => { hiddenAt = Date.now(); lastTrim = 0; });
-    win.on("show", () => { hiddenAt = 0; restore(); });
+    win.on("show", () => { hiddenAt = 0; restore(); updateThumbar(); });
+    // Windows drops the thumbnail buttons when the taskbar button is recreated (hide/show, restore)
+    win.on("restore", updateThumbar);
+    wc.on("did-finish-load", updateThumbar);
+    updateThumbar();
     const timer = setInterval(() => {
       if (win.isDestroyed()) return clearInterval(timer);
       if (!hiddenAt || unloadedUrl) { pausedSince = 0; return; }
@@ -246,6 +302,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (cfg.hidePlusPromo) css += '[data-test-id="USER_PROFILE_PLUS_BADGE"],[data-test-id="USER_PROFILE_PLUS_LINK"],[class*="WithTopBanner_banner"],[class*="PlusOffer"],[class*="plusOffer"]{display:none!important}';
     if (THEME_CSS[cfg.theme]) css += THEME_CSS[cfg.theme];
     wc.executeJavaScript(`document.documentElement.toggleAttribute("data-ym-no-volume-percent", ${!cfg.showVolumePercent});` +
+      `document.documentElement.toggleAttribute("data-ym-no-quality", ${!cfg.showQuality});` +
+      `document.documentElement.toggleAttribute("data-ym-no-plsearch", ${!cfg.playlistSearch});` +
       `document.documentElement.setAttribute("data-ym-anim", ${JSON.stringify(cfg.vibeAnimation)})`).catch(() => {});
     const prev = featureCssKeys.get(wc);
     if (prev) wc.removeInsertedCSS(prev).catch(() => {});
@@ -301,7 +359,19 @@ module.exports = ({ appRequire, appDir } = {}) => {
       if (input.type !== "keyDown") return;
       if (input.key === "F12") { wc.toggleDevTools(); event.preventDefault(); }
       else if (input.key === "F5") { wc.reload(); event.preventDefault(); }
+      else if (input.control && !input.alt && !input.meta && isAppContents(wc)) {
+        // Interface zoom: Ctrl + = / + / - / 0 (main row and numpad)
+        const step = input.key === "=" || input.key === "+" || input.code === "NumpadAdd" ? 1
+          : input.key === "-" || input.key === "_" || input.code === "NumpadSubtract" ? -1
+          : input.key === "0" || input.code === "Numpad0" ? 0 : null;
+        if (step === null) return;
+        event.preventDefault();
+        const current = config().zoomFactor || 1;
+        const next = step === 0 ? 1 : ZOOM_STEPS.reduce((best, z) => (step > 0 ? (z > current + 0.001 && (best === null || z < best) ? z : best) : (z < current - 0.001 && (best === null || z > best) ? z : best)), null);
+        if (next !== null) setZoom(next, true);
+      }
     });
+    wc.on("did-finish-load", () => { if (isAppContents(wc)) wc.setZoomFactor(config().zoomFactor || 1); });
   };
 
   // ── IPC for the settings UI ──────────────────────────────────────────────
@@ -314,7 +384,9 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (!own(event)) return null;
     let files = [];
     try { files = fs.readdirSync(modsDir).filter(isModFile).sort((a, b) => a.replace(/^_/, "").localeCompare(b.replace(/^_/, ""))); } catch {}
-    return { config: config(), mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo() };
+    const cfg = config();
+    for (const key of ["lastfmSession", "lastfmApiSecret"]) if (cfg[key]) cfg[key] = "•"; // the page only needs to know they are set
+    return { config: cfg, mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo(), discord: discord.status };
   });
   const applyConfigPatch = (cfg, patch) => {
     for (const [key, value] of Object.entries(patch)) {
@@ -328,6 +400,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
         if (value in THEME_CSS || value === "default") cfg.theme = value;
       } else if (key === "vibeAnimation") {
         if (["on", "focus", "off"].includes(value)) cfg.vibeAnimation = value;
+      } else if (PROTECTED_KEYS.has(key)) {
+        continue;
+      } else if (key === "zoomFactor") {
+        if (Number.isFinite(value)) cfg.zoomFactor = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+      } else if (typeof value === "string") {
+        cfg[key] = value.slice(0, 200);
       } else {
         cfg[key] = value;
       }
@@ -341,7 +419,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
     log.info("config updated", JSON.stringify(patch));
     appContents.forEach((wc) => (wc.isDestroyed() ? appContents.delete(wc) : applyFeatureCss(wc)));
     if ("hotkeys" in patch || "hotkeysEnabled" in patch) registerHotkeys();
-    return { ok: true, hotkeyStatus };
+    if ("thumbarButtons" in patch) updateThumbar();
+    if ("zoomFactor" in patch) setZoom(cfg.zoomFactor, false);
+    if ("miniPlayerOnTop" in patch || "miniPlayerLarge" in patch) applyMiniOptions();
+    if (["discordRpc", "discordClientId", "discordShowPaused"].some((k) => k in patch)) configureDiscord();
+    if (["lastfmEnabled", "lastfmApiKey", "lastfmApiSecret"].some((k) => k in patch)) configureLastFm();
+    return { ok: true, hotkeyStatus, discord: discord.status };
   });
   ipcMain.handle("ymmods:toggle", (event, name, enabled) => {
     if (!own(event) || !isModFile(name)) return null;
@@ -366,7 +449,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
   const text = () => TRAY_TEXT[(trackState.lang || "").slice(0, 2)] || TRAY_TEXT.ru;
   const mainContents = () => [...appContents].find((wc) => !wc.isDestroyed() && isAppContents(wc));
   const appAction = (action) => { const wc = mainContents(); if (wc) wc.send("desktop:player:action", action); };
-  const PAGE_COMMANDS = ["like", "volumeUp", "volumeDown"];
+  const PAGE_COMMANDS = ["like", "dislike", "shuffle", "repeat", "volumeUp", "volumeDown"];
   const PLAYER_COMMANDS = ["playPause", "next", "prev", ...PAGE_COMMANDS];
   const showMainWindow = () => {
     if (!mainWin || mainWin.isDestroyed()) return;
@@ -384,6 +467,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
         if (wc) wc.executeJavaScript(`window.__ymModsPlayer && window.__ymModsPlayer.cmd(${JSON.stringify(name)})`).catch(() => {});
       } else if (name === "miniPlayer") toggleMini();
       else if (name === "closeMini") closeMini();
+      else if (name === "miniPin") setMiniOption("miniPlayerOnTop");
+      else if (name === "miniSize") setMiniOption("miniPlayerLarge");
       else if (name === "showApp") showMainWindow();
     };
     if (PLAYER_COMMANDS.includes(name) && restoreUi && restoreUi(run)) return;
@@ -393,10 +478,16 @@ module.exports = ({ appRequire, appDir } = {}) => {
   // ── Mini player window ───────────────────────────────────────────────────
   let mini = null;
   let creatingMini = false;
-  const sendMini = () => { if (mini && !mini.isDestroyed()) mini.webContents.send("ymmods:mini-state", trackState); };
+  const sendMini = () => {
+    if (!mini || mini.isDestroyed()) return;
+    const cfg = config();
+    mini.webContents.send("ymmods:mini-state", { ...trackState, onTop: !!cfg.miniPlayerOnTop, large: !!cfg.miniPlayerLarge });
+  };
+  // Window sizes include 16px of transparent margin for the shadow (see miniplayer.html)
+  const miniSize = () => (config().miniPlayerLarge ? { W: 312, H: 458 } : { W: 392, H: 116 });
   const miniPosition = () => {
     const b = config().miniPlayerBounds;
-    const W = 392, H = 116; // pill + 16px transparent margin for its shadow (see miniplayer.html)
+    const { W, H } = miniSize();
     if (b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
       const area = screen.getDisplayMatching({ x: b.x, y: b.y, width: W, height: H }).workArea;
       if (b.x >= area.x - W / 2 && b.x <= area.x + area.width - W / 2 && b.y >= area.y && b.y <= area.y + area.height - H / 2) return { x: b.x, y: b.y, width: W, height: H };
@@ -410,12 +501,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
     try {
       mini = new BrowserWindow({
         ...miniPosition(), frame: false, transparent: true, resizable: false, maximizable: false, minimizable: false,
-        fullscreenable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false, show: false, backgroundColor: "#00000000",
+        fullscreenable: false, alwaysOnTop: !!config().miniPlayerOnTop, skipTaskbar: true, hasShadow: false, show: false, backgroundColor: "#00000000",
         title: "Mini player",
         webPreferences: { preload: path.join(MOD_HOME, "mini-preload.js"), contextIsolation: true, sandbox: true, nodeIntegration: false },
       });
     } finally { creatingMini = false; }
-    mini.setAlwaysOnTop(true, "floating");
+    if (config().miniPlayerOnTop) mini.setAlwaysOnTop(true, "floating");
     mini.loadFile(path.join(MOD_HOME, "miniplayer.html"));
     mini.once("ready-to-show", () => { mini.showInactive(); sendMini(); });
     let saveTimer;
@@ -469,7 +560,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     mini.on("closed", () => { mini = null; });
   };
   // The mini player uses the app's own icons: symbols from icons/sprite.svg inside app.asar
-  const MINI_ICONS = ["play_filled_xs", "pause_filled_xs", "next_xxs", "previous_xxs", "like_xxs", "liked_xxs", "close_xxs"];
+  const MINI_ICONS = ["play_filled_xs", "pause_filled_xs", "next_xxs", "previous_xxs", "like_xxs", "liked_xxs", "close_xxs",
+    "pin_xxs", "pin_filled_xxs", "fullscreen_xs", "arrowDown_xxs", "dislike_xxs", "disliked_xxs"];
   let miniIcons = null;
   const loadMiniIcons = () => {
     if (miniIcons) return miniIcons;
@@ -487,6 +579,25 @@ module.exports = ({ appRequire, appDir } = {}) => {
   };
   ipcMain.handle("ymmods:mini-icons", (event) => (mini && !mini.isDestroyed() && event.sender === mini.webContents ? loadMiniIcons() : {}));
   const closeMini = () => { if (mini && !mini.isDestroyed()) mini.close(); };
+  // Pin (always on top) and size changes: applied to an open mini player right away
+  const applyMiniOptions = () => {
+    if (!mini || mini.isDestroyed()) return;
+    const cfg = config();
+    mini.setAlwaysOnTop(!!cfg.miniPlayerOnTop, "floating");
+    const { width, height } = miniPosition();
+    const [x, y] = mini.getPosition();
+    const [w, h] = mini.getSize();
+    // keep the bottom edge in place when the card grows or shrinks (the pill usually sits at the bottom)
+    const area = screen.getDisplayMatching({ x, y, width: w, height: h }).workArea;
+    const nx = Math.min(Math.max(x + w - width, area.x - 16), area.x + area.width - width + 16);
+    const ny = Math.min(Math.max(y + h - height, area.y - 16), area.y + area.height - height + 16);
+    mini.setBounds({ x: nx, y: ny, width, height });
+    sendMini();
+  };
+  const setMiniOption = (key) => {
+    try { const cfg = config(); cfg[key] = !cfg[key]; saveConfig(cfg); } catch (e) { log.error("mini option", e); }
+    applyMiniOptions();
+  };
   const toggleMini = () => (mini && !mini.isDestroyed() ? closeMini() : openMini());
   ipcMain.handle("ymmods:mini-toggle", (event) => { if (own(event)) toggleMini(); return !!mini; });
   ipcMain.on("ymmods:mini-cmd", (event, name) => {
@@ -517,8 +628,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
   // Track state reported by features.js
   ipcMain.on("ymmods:state", (event, state) => {
     if (!own(event) || !state || typeof state !== "object") return;
+    const langChanged = state.lang !== trackState.lang;
     trackState = state;
     sendMini();
+    pushPresence();
+    lastfm.update(state);
+    if (langChanged) updateThumbar();
     const key = trackKey(state);
     if (sleep.mode === "track") {
       if (!sleep.track) sleep.track = key;
@@ -568,7 +683,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     }
     log.info("hotkeys", JSON.stringify(hotkeyStatus));
   };
-  app.on("will-quit", () => { try { globalShortcut.unregisterAll(); } catch {} });
+  app.on("will-quit", () => { try { globalShortcut.unregisterAll(); } catch {} discord.disconnect(); });
 
   // ── Export / import of mod settings (config + files from the mods folder) ─
   ipcMain.handle("ymmods:export", async (event) => {
@@ -581,6 +696,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     const mods = {};
     for (const f of fs.readdirSync(modsDir).filter(isModFile)) mods[f] = fs.readFileSync(path.join(modsDir, f), "utf8");
     const { miniPlayerBounds, ...cfg } = config();
+    for (const key of PRIVATE_KEYS) delete cfg[key];
     fs.writeFileSync(filePath, JSON.stringify({ format: "ymmods-settings", version: 1, exportedAt: new Date().toISOString(), config: cfg, mods }, null, 2));
     log.info("settings exported", filePath);
     return { ok: true, path: filePath, mods: Object.keys(mods).length };
@@ -596,7 +712,9 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (!bundle || bundle.format !== "ymmods-settings" || typeof bundle.config !== "object") return { ok: false, error: "not a mod settings file" };
     const cfg = config();
     for (const key of ["wheelKnown", "wheelKeep", "wheelSettingItem"]) if (key in bundle.config) cfg[key] = bundle.config[key];
-    applyConfigPatch(cfg, bundle.config);
+    const imported = { ...bundle.config };
+    for (const key of PRIVATE_KEYS) delete imported[key];
+    applyConfigPatch(cfg, imported);
     saveConfig(cfg);
     let written = 0;
     for (const [name, content] of Object.entries(bundle.mods || {})) {
@@ -775,10 +893,137 @@ module.exports = ({ appRequire, appDir } = {}) => {
     });
   };
 
+  // ── Interface zoom (Ctrl + = / - / 0 and the settings) ──────────────────
+  const ZOOM_MIN = 0.75, ZOOM_MAX = 2;
+  const ZOOM_STEPS = [0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+  const setZoom = (factor, fromKeys) => {
+    const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, factor));
+    if (fromKeys) { try { const cfg = config(); cfg.zoomFactor = z; saveConfig(cfg); } catch (e) { log.error("zoom", e); } }
+    appContents.forEach((wc) => {
+      if (wc.isDestroyed()) return;
+      wc.setZoomFactor(z);
+      if (fromKeys) wc.executeJavaScript(`window.__ymModsToast && window.__ymModsToast(${JSON.stringify(Math.round(z * 100) + "%")})`).catch(() => {});
+    });
+  };
+
+  // ── Taskbar thumbnail buttons ────────────────────────────────────────────
+  const updateThumbar = () => {
+    if (!mainWin || mainWin.isDestroyed()) return;
+    thumbar.update(mainWin, { enabled: !!config().thumbarButtons, playing: isPlaying, lang: trackState.lang, cmd: playerCmd });
+  };
+
+  // ── Discord Rich Presence and Last.fm ────────────────────────────────────
+  const discord = new DiscordPresence(log);
+  const lastfm = new LastFm(log);
+  const INTEGRATION_TEXT = { ru: "Слушать в Яндекс Музыке", en: "Listen on Yandex Music", kk: "Яндекс Музыкада тыңдау", uz: "Yandex Musiqada tinglash" };
+  const pushPresence = () => {
+    const cfg = config();
+    if (!cfg.discordRpc) return;
+    const lang = (trackState.lang || "").slice(0, 2);
+    discord.setActivity(activityFor(trackState, { showPaused: !!cfg.discordShowPaused, buttonLabel: INTEGRATION_TEXT[lang] || INTEGRATION_TEXT.ru }));
+  };
+  const configureDiscord = () => {
+    const cfg = config();
+    discord.configure(!!cfg.discordRpc, cfg.discordClientId);
+    pushPresence();
+  };
+  const configureLastFm = () => {
+    const cfg = config();
+    lastfm.configure(cfg.lastfmEnabled ? { apiKey: cfg.lastfmApiKey, apiSecret: cfg.lastfmApiSecret, sessionKey: cfg.lastfmSession } : {});
+  };
+  // Last.fm counts listening time: it needs ticks even while nothing in the reported state changes
+  setInterval(() => { if (lastfm.ready && trackState.playing) lastfm.update(trackState); }, 5000);
+  let lastfmAuth = null; // the pending web authorization
+  ipcMain.handle("ymmods:lastfm-login", async (event) => {
+    if (!own(event)) return { ok: false };
+    const cfg = config();
+    if (!cfg.lastfmApiKey || !cfg.lastfmApiSecret) return { ok: false, error: "no-keys" };
+    const client = new LastFm(log);
+    client.configure({ apiKey: cfg.lastfmApiKey, apiSecret: cfg.lastfmApiSecret });
+    const attempt = {};
+    lastfmAuth = attempt;
+    try {
+      const { token, url } = await client.beginAuth();
+      shell.openExternal(url);
+      const session = await client.finishAuth(token, { isCancelled: () => lastfmAuth !== attempt });
+      const next = config();
+      next.lastfmSession = session.key;
+      next.lastfmUser = session.name;
+      next.lastfmEnabled = true;
+      saveConfig(next);
+      configureLastFm();
+      log.info("last.fm: signed in as", session.name);
+      return { ok: true, user: session.name };
+    } catch (e) {
+      log.error("last.fm login", e.message);
+      return { ok: false, error: e.message };
+    }
+  });
+  ipcMain.handle("ymmods:lastfm-logout", (event) => {
+    if (!own(event)) return false;
+    lastfmAuth = null;
+    const cfg = config();
+    cfg.lastfmSession = "";
+    cfg.lastfmUser = "";
+    saveConfig(cfg);
+    configureLastFm();
+    return true;
+  });
+
+  // ── Storage: downloaded tracks, caches, downloads folder ─────────────────
+  ipcMain.handle("ymmods:storage", async (event) => {
+    if (!own(event)) return null;
+    const cfg = config();
+    const sessionDir = app.getPath("sessionData");
+    const custom = path.resolve(sessionDir).toLowerCase() !== path.resolve(app.getPath("userData")).toLowerCase();
+    return { ...(await storage.info(sessionDir, custom)), pending: cfg.downloadsMove, lastMove: cfg.downloadsMoveResult };
+  });
+  ipcMain.handle("ymmods:clear-cache", async (event) => {
+    if (!own(event)) return false;
+    // HTTP and compiled-code caches only: downloaded tracks and the login stay
+    await event.sender.session.clearCache();
+    await event.sender.session.clearCodeCaches({}).catch(() => {});
+    log.info("cache cleared");
+    return true;
+  });
+  ipcMain.handle("ymmods:downloads-move", async (event, toDefault) => {
+    if (!own(event)) return null;
+    const cfg = config();
+    if (toDefault) {
+      cfg.downloadsMove = { target: "" };
+    } else {
+      const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), { properties: ["openDirectory", "createDirectory"] });
+      if (canceled || !filePaths || !filePaths[0]) return { canceled: true };
+      const target = path.join(filePaths[0], "YandexMusic Data");
+      const inside = (dir) => (target.toLowerCase() + path.sep).startsWith(path.resolve(dir).toLowerCase() + path.sep);
+      if (inside(app.getPath("userData")) || inside(app.getPath("sessionData"))) return { error: "inside-app-data" };
+      if (fs.existsSync(target) && fs.readdirSync(target).length) return { error: "not-empty", target };
+      cfg.downloadsMove = { target };
+    }
+    saveConfig(cfg);
+    log.info("downloads move scheduled", JSON.stringify(cfg.downloadsMove));
+    return { scheduled: cfg.downloadsMove };
+  });
+  ipcMain.handle("ymmods:downloads-cancel", (event) => {
+    if (!own(event)) return false;
+    const cfg = config();
+    cfg.downloadsMove = null;
+    saveConfig(cfg);
+    return true;
+  });
+  ipcMain.handle("ymmods:relaunch", (event) => {
+    if (!own(event)) return false;
+    app.relaunch();
+    app.quit();
+    return true;
+  });
+
   // ── Wiring ───────────────────────────────────────────────────────────────
   app.on("ready", () => {
     setupUpdater();
     setupSession(session.defaultSession);
+    configureDiscord();
+    configureLastFm();
   });
   let mainWindowSetUp = false;
   app.on("browser-window-created", (_event, win) => {

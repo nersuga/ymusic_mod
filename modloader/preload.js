@@ -18,5 +18,12 @@ if (window === window.top && location.protocol === "music-application:") {
     getSleepTimer: () => ipcRenderer.invoke("ymmods:sleep-get"),
     exportSettings: () => ipcRenderer.invoke("ymmods:export"),
     importSettings: () => ipcRenderer.invoke("ymmods:import"),
+    storageInfo: () => ipcRenderer.invoke("ymmods:storage"),
+    clearCache: () => ipcRenderer.invoke("ymmods:clear-cache"),
+    moveDownloads: (toDefault) => ipcRenderer.invoke("ymmods:downloads-move", !!toDefault),
+    cancelDownloadsMove: () => ipcRenderer.invoke("ymmods:downloads-cancel"),
+    relaunch: () => ipcRenderer.invoke("ymmods:relaunch"),
+    lastfmLogin: () => ipcRenderer.invoke("ymmods:lastfm-login"),
+    lastfmLogout: () => ipcRenderer.invoke("ymmods:lastfm-logout"),
   });
 }

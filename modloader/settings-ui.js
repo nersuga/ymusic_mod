@@ -35,7 +35,7 @@
       sleepActiveMin: (n) => `Пауза через ${n} мин`,
       sleepActiveTrack: "Пауза после текущего трека",
       hotkeysEnabled: ["Глобальные горячие клавиши", "Работают, даже когда окно свёрнуто или в трее. Нажмите на сочетание, чтобы изменить; Backspace — убрать, Esc — отмена"],
-      hotkeyNames: { playPause: "Пауза / воспроизведение", next: "Следующий трек", prev: "Предыдущий трек", like: "Нравится", volumeUp: "Громче", volumeDown: "Тише", miniPlayer: "Мини-плеер" },
+      hotkeyNames: { playPause: "Пауза / воспроизведение", next: "Следующий трек", prev: "Предыдущий трек", like: "Нравится", volumeUp: "Громче", volumeDown: "Тише", miniPlayer: "Мини-плеер", shuffle: "Перемешать", repeat: "Повтор", dislike: "Не нравится" },
       hotkeyPress: "Нажмите сочетание…",
       hotkeyNone: "Не задано",
       hotkeyBusy: "занято другой программой",
@@ -58,6 +58,42 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Артист",
+      miniPlayerOnTop: ["Мини-плеер поверх окон", "Также переключается булавкой в самом мини-плеере"],
+      miniPlayerLarge: ["Крупный мини-плеер", "Карточка с большой обложкой и прогрессом трека вместо компактной полоски"],
+      thumbarButtons: ["Кнопки в панели задач", "Назад, пауза и вперёд под превью окна при наведении на значок в панели задач"],
+      showQuality: ["Качество трека", "Кодек и битрейт играющего файла в панели плеера"],
+      playlistSearch: ["Поиск в «Добавить в плейлист»", "Поле поиска в меню выбора плейлиста, если плейлистов много"],
+      zoom: ["Масштаб интерфейса", "Также Ctrl + = / Ctrl + − / Ctrl + 0"],
+      groupStorage: "Хранилище",
+      downloads: ["Скачанные треки", (n, size, dir) => `${n} файл(ов) · ${size} · ${dir}`],
+      downloadsMove: "Перенести…",
+      downloadsMoveHint: "Переносит скачанные треки, кеш и данные входа в другую папку (например, на другой диск)",
+      downloadsReset: "Вернуть на место",
+      downloadsPending: (dir) => `Перенос в «${dir}» выполнится при следующем запуске`,
+      downloadsPendingReset: "Возврат в папку приложения выполнится при следующем запуске",
+      downloadsCancel: "Отменить",
+      downloadsNotEmpty: "Эта папка не пустая — выберите пустую",
+      downloadsInside: "Нельзя переносить внутрь папки приложения",
+      downloadsFailed: (e) => `Прошлый перенос не удался: ${e}`,
+      relaunch: "Перезапустить сейчас",
+      cache: ["Кеш", (size) => `${size} — картинки, страницы и код. Скачанные треки и вход не затрагиваются`],
+      cacheClear: "Очистить",
+      cacheCleared: "Кеш очищен",
+      groupIntegrations: "Интеграции",
+      discordRpc: ["Статус в Discord", "Показывать в профиле Discord, что вы слушаете. Discord должен быть запущен"],
+      discordClientId: ["Application ID", "Создайте приложение на discord.com/developers/applications — его имя (например, «Яндекс Музыка») будет в статусе. Скопируйте Application ID со страницы General Information"],
+      discordShowPaused: ["Статус на паузе", "Не убирать статус, когда музыка на паузе"],
+      discordStatus: { off: "", connecting: "Подключение к Discord…", connected: "Подключено к Discord", "no-discord": "Discord не запущен — подключусь, когда он откроется", error: "Проверьте Application ID" },
+      lastfmEnabled: ["Скробблинг в Last.fm", "Трек засчитывается после половины или 4 минут прослушивания"],
+      lastfmApiKey: ["API key", "Создайте ключ на last.fm/api/account/create (Callback URL можно не заполнять) и вставьте API key и Shared secret"],
+      lastfmApiSecret: ["Shared secret", ""],
+      lastfmLogin: "Войти",
+      lastfmLogout: "Выйти",
+      lastfmWaiting: "Разрешите доступ в открывшемся браузере…",
+      lastfmUser: (u) => `Вы вошли как ${u}`,
+      lastfmNeedKeys: "Сначала вставьте API key и Shared secret",
+      lastfmAccount: ["Аккаунт Last.fm", "Не выполнен вход"],
+      secretSet: "сохранён",
     },
     en: {
       mods: "Mods",
@@ -89,7 +125,7 @@
       sleepActiveMin: (n) => `Pausing in ${n} min`,
       sleepActiveTrack: "Pausing after the current track",
       hotkeysEnabled: ["Global hotkeys", "Work even when the window is minimized or in the tray. Click a shortcut to change it; Backspace clears, Esc cancels"],
-      hotkeyNames: { playPause: "Play / pause", next: "Next track", prev: "Previous track", like: "Like", volumeUp: "Volume up", volumeDown: "Volume down", miniPlayer: "Mini player" },
+      hotkeyNames: { playPause: "Play / pause", next: "Next track", prev: "Previous track", like: "Like", volumeUp: "Volume up", volumeDown: "Volume down", miniPlayer: "Mini player", shuffle: "Shuffle", repeat: "Repeat", dislike: "Dislike" },
       hotkeyPress: "Press keys…",
       hotkeyNone: "Not set",
       hotkeyBusy: "taken by another program",
@@ -112,6 +148,42 @@
       album: "Album",
       playlist: "Playlist",
       artistTile: "Artist",
+      miniPlayerOnTop: ["Mini player on top", "Also toggled by the pin in the mini player itself"],
+      miniPlayerLarge: ["Large mini player", "A card with a big cover and track progress instead of the compact bar"],
+      thumbarButtons: ["Taskbar buttons", "Previous, pause and next under the window preview of the taskbar icon"],
+      showQuality: ["Track quality", "Codec and bitrate of the playing file in the player bar"],
+      playlistSearch: ["Search in “Add to playlist”", "A search field in the playlist menu when there are many playlists"],
+      zoom: ["Interface zoom", "Also Ctrl + = / Ctrl + − / Ctrl + 0"],
+      groupStorage: "Storage",
+      downloads: ["Downloaded tracks", (n, size, dir) => `${n} file(s) · ${size} · ${dir}`],
+      downloadsMove: "Move…",
+      downloadsMoveHint: "Moves downloaded tracks, caches and login data to another folder (e.g. another drive)",
+      downloadsReset: "Move back",
+      downloadsPending: (dir) => `The move to “${dir}” happens at the next start`,
+      downloadsPendingReset: "The move back to the app folder happens at the next start",
+      downloadsCancel: "Cancel",
+      downloadsNotEmpty: "This folder is not empty — pick an empty one",
+      downloadsInside: "Cannot move into the app's own folder",
+      downloadsFailed: (e) => `The last move failed: ${e}`,
+      relaunch: "Restart now",
+      cache: ["Cache", (size) => `${size} — images, pages and code. Downloaded tracks and the login stay`],
+      cacheClear: "Clear",
+      cacheCleared: "Cache cleared",
+      groupIntegrations: "Integrations",
+      discordRpc: ["Discord status", "Show what you are listening to in your Discord profile. Discord must be running"],
+      discordClientId: ["Application ID", "Create an application at discord.com/developers/applications — its name (e.g. “Yandex Music”) is shown in the status. Copy the Application ID from General Information"],
+      discordShowPaused: ["Status while paused", "Keep the status when music is paused"],
+      discordStatus: { off: "", connecting: "Connecting to Discord…", connected: "Connected to Discord", "no-discord": "Discord is not running — will connect when it opens", error: "Check the Application ID" },
+      lastfmEnabled: ["Last.fm scrobbling", "A track counts after half of it or 4 minutes have played"],
+      lastfmApiKey: ["API key", "Create a key at last.fm/api/account/create (Callback URL may stay empty) and paste the API key and Shared secret"],
+      lastfmApiSecret: ["Shared secret", ""],
+      lastfmLogin: "Sign in",
+      lastfmLogout: "Sign out",
+      lastfmWaiting: "Allow access in the browser that opened…",
+      lastfmUser: (u) => `Signed in as ${u}`,
+      lastfmNeedKeys: "Paste the API key and Shared secret first",
+      lastfmAccount: ["Last.fm account", "Not signed in"],
+      secretSet: "saved",
     },
     kk: {
       mods: "Модтар",
@@ -143,7 +215,7 @@
       sleepActiveMin: (n) => `${n} минуттан кейін кідіреді`,
       sleepActiveTrack: "Ағымдағы тректен кейін кідіреді",
       hotkeysEnabled: ["Жаһандық жылдам пернелер", "Терезе кішірейтілгенде немесе науада болғанда да жұмыс істейді. Өзгерту үшін тіркесімді басыңыз; Backspace — алып тастау, Esc — болдырмау"],
-      hotkeyNames: { playPause: "Кідірту / ойнату", next: "Келесі трек", prev: "Алдыңғы трек", like: "Ұнайды", volumeUp: "Қаттырақ", volumeDown: "Ақырынырақ", miniPlayer: "Шағын ойнатқыш" },
+      hotkeyNames: { playPause: "Кідірту / ойнату", next: "Келесі трек", prev: "Алдыңғы трек", like: "Ұнайды", volumeUp: "Қаттырақ", volumeDown: "Ақырынырақ", miniPlayer: "Шағын ойнатқыш", shuffle: "Араластыру", repeat: "Қайталау", dislike: "Ұнамайды" },
       hotkeyPress: "Тіркесімді басыңыз…",
       hotkeyNone: "Орнатылмаған",
       hotkeyBusy: "басқа бағдарлама пайдалануда",
@@ -166,6 +238,42 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Әртіс",
+      miniPlayerOnTop: ["Шағын ойнатқыш терезелердің үстінде", "Шағын ойнатқыштағы түйреуішпен де ауыстырылады"],
+      miniPlayerLarge: ["Үлкен шағын ойнатқыш", "Шағын жолақтың орнына үлкен мұқабасы мен трек барысы бар карта"],
+      thumbarButtons: ["Тапсырмалар тақтасындағы түймелер", "Тапсырмалар тақтасындағы белгішенің алдын ала көрінісінде: артқа, кідірту, алға"],
+      showQuality: ["Трек сапасы", "Ойнатқыш тақтасында ойнап тұрған файлдың кодегі мен битрейті"],
+      playlistSearch: ["«Плейлистке қосу» ішінде іздеу", "Плейлистер көп болса, таңдау мәзірінде іздеу өрісі"],
+      zoom: ["Интерфейс масштабы", "Сондай-ақ Ctrl + = / Ctrl + − / Ctrl + 0"],
+      groupStorage: "Жад",
+      downloads: ["Жүктелген тректер", (n, size, dir) => `${n} файл · ${size} · ${dir}`],
+      downloadsMove: "Көшіру…",
+      downloadsMoveHint: "Жүктелген тректерді, кэшті және кіру деректерін басқа қалтаға (мысалы, басқа дискке) көшіреді",
+      downloadsReset: "Орнына қайтару",
+      downloadsPending: (dir) => `«${dir}» қалтасына көшіру келесі іске қосқанда орындалады`,
+      downloadsPendingReset: "Қолданба қалтасына қайтару келесі іске қосқанда орындалады",
+      downloadsCancel: "Болдырмау",
+      downloadsNotEmpty: "Бұл қалта бос емес — бос қалтаны таңдаңыз",
+      downloadsInside: "Қолданбаның өз қалтасына көшіруге болмайды",
+      downloadsFailed: (e) => `Алдыңғы көшіру сәтсіз аяқталды: ${e}`,
+      relaunch: "Қазір қайта іске қосу",
+      cache: ["Кэш", (size) => `${size} — суреттер, беттер және код. Жүктелген тректер мен кіру сақталады`],
+      cacheClear: "Тазалау",
+      cacheCleared: "Кэш тазаланды",
+      groupIntegrations: "Интеграциялар",
+      discordRpc: ["Discord мәртебесі", "Discord профиліңізде не тыңдап жатқаныңызды көрсету. Discord іске қосулы болуы керек"],
+      discordClientId: ["Application ID", "discord.com/developers/applications сайтында қолданба жасаңыз — оның атауы (мысалы, «Яндекс Музыка») мәртебеде көрсетіледі. General Information бетінен Application ID көшіріңіз"],
+      discordShowPaused: ["Кідірістегі мәртебе", "Музыка кідіртілгенде мәртебені алып тастамау"],
+      discordStatus: { off: "", connecting: "Discord-қа қосылуда…", connected: "Discord-қа қосылды", "no-discord": "Discord іске қосылмаған — ашылғанда қосыламын", error: "Application ID тексеріңіз" },
+      lastfmEnabled: ["Last.fm скробблингі", "Трек жартысы немесе 4 минуты тыңдалғаннан кейін есептеледі"],
+      lastfmApiKey: ["API key", "last.fm/api/account/create сайтында кілт жасап (Callback URL бос қалуы мүмкін), API key мен Shared secret қойыңыз"],
+      lastfmApiSecret: ["Shared secret", ""],
+      lastfmLogin: "Кіру",
+      lastfmLogout: "Шығу",
+      lastfmWaiting: "Ашылған браузерде рұқсат беріңіз…",
+      lastfmUser: (u) => `${u} ретінде кірдіңіз`,
+      lastfmNeedKeys: "Алдымен API key мен Shared secret қойыңыз",
+      lastfmAccount: ["Last.fm аккаунты", "Кіру орындалмаған"],
+      secretSet: "сақталды",
     },
     uz: {
       mods: "Modlar",
@@ -197,7 +305,7 @@
       sleepActiveMin: (n) => `${n} daqiqadan keyin pauza`,
       sleepActiveTrack: "Joriy trekdan keyin pauza",
       hotkeysEnabled: ["Global tezkor tugmalar", "Oyna yig‘ilgan yoki treyda bo‘lsa ham ishlaydi. O‘zgartirish uchun birikmani bosing; Backspace — olib tashlash, Esc — bekor qilish"],
-      hotkeyNames: { playPause: "Pauza / ijro", next: "Keyingi trek", prev: "Oldingi trek", like: "Yoqdi", volumeUp: "Balandroq", volumeDown: "Pastroq", miniPlayer: "Mini pleyer" },
+      hotkeyNames: { playPause: "Pauza / ijro", next: "Keyingi trek", prev: "Oldingi trek", like: "Yoqdi", volumeUp: "Balandroq", volumeDown: "Pastroq", miniPlayer: "Mini pleyer", shuffle: "Aralashtirish", repeat: "Takrorlash", dislike: "Yoqmadi" },
       hotkeyPress: "Tugmalarni bosing…",
       hotkeyNone: "Belgilanmagan",
       hotkeyBusy: "boshqa dastur band qilgan",
@@ -220,6 +328,42 @@
       album: "Albom",
       playlist: "Pleylist",
       artistTile: "Ijrochi",
+      miniPlayerOnTop: ["Mini pleyer oynalar ustida", "Mini pleyerdagi to‘g‘nog‘ich bilan ham almashtiriladi"],
+      miniPlayerLarge: ["Katta mini pleyer", "Ixcham chiziq o‘rniga katta muqova va trek jarayoni bilan karta"],
+      thumbarButtons: ["Vazifalar panelidagi tugmalar", "Vazifalar panelidagi belgi oldindan ko‘rinishi ostida: orqaga, pauza, oldinga"],
+      showQuality: ["Trek sifati", "Pleyer panelida ijro etilayotgan faylning kodeki va bitreyti"],
+      playlistSearch: ["«Pleylistga qo‘shish»da qidiruv", "Pleylistlar ko‘p bo‘lsa, tanlash menyusida qidiruv maydoni"],
+      zoom: ["Interfeys masshtabi", "Shuningdek Ctrl + = / Ctrl + − / Ctrl + 0"],
+      groupStorage: "Xotira",
+      downloads: ["Yuklab olingan treklar", (n, size, dir) => `${n} ta fayl · ${size} · ${dir}`],
+      downloadsMove: "Ko‘chirish…",
+      downloadsMoveHint: "Yuklab olingan treklar, kesh va kirish maʼlumotlarini boshqa papkaga (masalan, boshqa diskka) ko‘chiradi",
+      downloadsReset: "Joyiga qaytarish",
+      downloadsPending: (dir) => `«${dir}» ga ko‘chirish keyingi ishga tushirishda bajariladi`,
+      downloadsPendingReset: "Ilova papkasiga qaytarish keyingi ishga tushirishda bajariladi",
+      downloadsCancel: "Bekor qilish",
+      downloadsNotEmpty: "Bu papka bo‘sh emas — bo‘sh papkani tanlang",
+      downloadsInside: "Ilovaning o‘z papkasiga ko‘chirib bo‘lmaydi",
+      downloadsFailed: (e) => `Oldingi ko‘chirish amalga oshmadi: ${e}`,
+      relaunch: "Hozir qayta ishga tushirish",
+      cache: ["Kesh", (size) => `${size} — rasmlar, sahifalar va kod. Yuklab olingan treklar va kirish saqlanadi`],
+      cacheClear: "Tozalash",
+      cacheCleared: "Kesh tozalandi",
+      groupIntegrations: "Integratsiyalar",
+      discordRpc: ["Discord holati", "Discord profilingizda nima tinglayotganingizni ko‘rsatish. Discord ishga tushirilgan bo‘lishi kerak"],
+      discordClientId: ["Application ID", "discord.com/developers/applications saytida ilova yarating — uning nomi (masalan, «Yandex Musiqa») holatda ko‘rinadi. General Information sahifasidan Application ID ni nusxalang"],
+      discordShowPaused: ["Pauzadagi holat", "Musiqa pauzada bo‘lganda holatni olib tashlamaslik"],
+      discordStatus: { off: "", connecting: "Discord ga ulanmoqda…", connected: "Discord ga ulandi", "no-discord": "Discord ishga tushirilmagan — ochilganda ulanaman", error: "Application ID ni tekshiring" },
+      lastfmEnabled: ["Last.fm skrobbling", "Trek yarmi yoki 4 daqiqasi tinglangandan keyin hisoblanadi"],
+      lastfmApiKey: ["API key", "last.fm/api/account/create saytida kalit yarating (Callback URL bo‘sh qolishi mumkin) va API key hamda Shared secret ni qo‘ying"],
+      lastfmApiSecret: ["Shared secret", ""],
+      lastfmLogin: "Kirish",
+      lastfmLogout: "Chiqish",
+      lastfmWaiting: "Ochilgan brauzerda ruxsat bering…",
+      lastfmUser: (u) => `${u} sifatida kirdingiz`,
+      lastfmNeedKeys: "Avval API key va Shared secret ni qo‘ying",
+      lastfmAccount: ["Last.fm hisobi", "Kirilmagan"],
+      secretSet: "saqlangan",
     },
   };
   const currentLang = () => {
@@ -239,6 +383,10 @@
     .ymmods-chip[aria-pressed="true"]{background:var(--ym-controls-color-primary-default-enabled,#ff0);border-color:var(--ym-controls-color-primary-default-enabled,#ff0);color:#000;font-weight:600}
     .ymmods-key{min-width:150px;text-align:center;font-family:"YS Text",sans-serif}
     .ymmods-key[data-recording="true"]{border-color:var(--ym-controls-color-primary-default-enabled,#ff0);color:var(--ym-controls-color-primary-default-enabled,#ff0)}
+    .ymmods-input{width:260px;max-width:100%;height:36px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);
+      color:#fff;font:500 13px/34px "YS Text",sans-serif;outline:none;flex-shrink:0;box-sizing:border-box;transition:border-color .15s}
+    .ymmods-input:focus{border-color:var(--ym-controls-color-primary-default-enabled,#ff0)}
+    .ymmods-input::placeholder{color:rgba(255,255,255,.4)}
     .ymmods-note{color:#ff6b5e!important}
     .ymmods-ok{color:#8fd694!important}`;
   const ensureStyle = () => {
@@ -386,6 +534,48 @@
       li.querySelector("button").addEventListener("click", () => onClick(li));
       return li;
     };
+    // Text field saved on change (Enter or leaving the field). Secrets are never sent back to the page:
+    // an empty field with the "saved" placeholder keeps the stored value
+    const makeInput = (value, placeholder, onSave, secret) => {
+      const input = document.createElement("input");
+      input.className = "ymmods-input";
+      input.type = secret ? "password" : "text";
+      input.spellcheck = false;
+      input.autocomplete = "off";
+      input.value = secret ? "" : value || "";
+      input.placeholder = secret && value ? t.secretSet : placeholder || "";
+      let saved = input.value;
+      const save = async () => {
+        const v = input.value.trim();
+        if (v === saved || (secret && !v)) return;
+        saved = v;
+        await onSave(v);
+        if (secret) { input.value = ""; input.placeholder = v ? t.secretSet : placeholder || ""; saved = ""; }
+      };
+      input.addEventListener("change", save);
+      input.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") input.blur(); });
+      return input;
+    };
+    const formatSize = (bytes) => {
+      const units = lang === "ru" || lang === "kk" ? ["Б", "КБ", "МБ", "ГБ"] : lang === "uz" ? ["B", "KB", "MB", "GB"] : ["B", "KB", "MB", "GB"];
+      let i = 0, v = bytes || 0;
+      while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+      return (i ? v.toFixed(v < 10 ? 1 : 0) : v) + " " + units[i];
+    };
+    const chipButton = (label, onClick) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ymmods-chip";
+      b.textContent = label;
+      b.addEventListener("click", onClick);
+      return b;
+    };
+    const chipGroup = (...buttons) => {
+      const box = document.createElement("div");
+      box.className = "ymmods-chips";
+      buttons.filter(Boolean).forEach((b) => box.appendChild(b));
+      return box;
+    };
     const setToggle = (key) => (v) => window.ymMods.setConfig({ [key]: v });
     const addToggles = (keys) => { for (const key of keys) ul.appendChild(makeToggle(...t[key], !!cfg[key], setToggle(key))); };
 
@@ -402,6 +592,7 @@
     miniButton.textContent = t.miniPlayerShow;
     miniButton.addEventListener("click", () => window.ymMods.toggleMiniPlayer());
     ul.appendChild(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
+    addToggles(["miniPlayerOnTop", "miniPlayerLarge", "thumbarButtons", "showQuality", "playlistSearch"]);
 
     const sleepDesc = (info) => (info && info.mode === "minutes" ? t.sleepActiveMin(info.minutesLeft) : info && info.mode === "track" ? t.sleepActiveTrack : t.sleep[1]);
     const sleepValue = (info) => (!info || info.mode === "off" ? "off" : info.mode === "track" ? "track" : "active");
@@ -472,12 +663,101 @@
     ul.appendChild(makeHeader(t.groupLook, 24));
     const themeChips = makeChips(Object.entries(t.themes), cfg.theme || "default", (value) => window.ymMods.setConfig({ theme: value }));
     ul.appendChild(makeRow(t.theme[0], t.theme[1], themeChips).li);
+    const zoomValues = [0.9, 1, 1.1, 1.25, 1.5];
+    const zoomNow = zoomValues.find((z) => Math.abs(z - (cfg.zoomFactor || 1)) < 0.001);
+    const zoomChips = makeChips(zoomValues.map((z) => [String(z), Math.round(z * 100) + "%"]), zoomNow ? String(zoomNow) : null,
+      (value) => window.ymMods.setConfig({ zoomFactor: Number(value) }));
+    ul.appendChild(makeRow(t.zoom[0], t.zoom[1], zoomChips).li);
     addToggles(["hideWordsCard", "hideConcerts", "hideNonMusic", "hidePlusPromo"]);
 
     // ── Performance ──
     ul.appendChild(makeHeader(t.groupPerf, 24));
     const animChips = makeChips(Object.entries(t.vibeAnimModes), cfg.vibeAnimation || "on", (value) => window.ymMods.setConfig({ vibeAnimation: value }));
     ul.appendChild(makeRow(t.vibeAnimation[0], t.vibeAnimation[1], animChips).li);
+
+    // ── Storage ──
+    ul.appendChild(makeHeader(t.groupStorage, 24));
+    const downloadsBox = chipGroup();
+    const { li: downloadsRow } = makeRow(t.downloads[0], "…", downloadsBox);
+    ul.appendChild(downloadsRow);
+    const cacheBox = chipGroup();
+    const { li: cacheRow } = makeRow(t.cache[0], "…", cacheBox);
+    ul.appendChild(cacheRow);
+    const note = (row, textValue, bad) => { row.ymDesc.textContent = textValue; row.ymDesc.classList.toggle("ymmods-note", !!bad); row.ymDesc.classList.remove("ymmods-ok"); };
+    const renderStorage = async () => {
+      const info = await window.ymMods.storageInfo();
+      if (!info) return;
+      downloadsBox.textContent = "";
+      cacheBox.textContent = "";
+      let desc = t.downloads[1](info.downloadsFiles, formatSize(info.downloadsBytes), info.downloadsDir);
+      let bad = false;
+      if (info.pending) {
+        desc = info.pending.target ? t.downloadsPending(info.pending.target) : t.downloadsPendingReset;
+        downloadsBox.append(chipButton(t.relaunch, () => window.ymMods.relaunch()), chipButton(t.downloadsCancel, async () => { await window.ymMods.cancelDownloadsMove(); renderStorage(); }));
+      } else {
+        if (info.lastMove && !info.lastMove.ok && Date.now() - info.lastMove.at < 86400000) { desc = t.downloadsFailed(info.lastMove.error); bad = true; }
+        const moveButton = chipButton(t.downloadsMove, async () => {
+          const res = await window.ymMods.moveDownloads(false);
+          if (res && res.error) note(downloadsRow, res.error === "not-empty" ? t.downloadsNotEmpty : t.downloadsInside, true);
+          else if (res && res.scheduled) renderStorage();
+        });
+        moveButton.title = t.downloadsMoveHint;
+        downloadsBox.append(moveButton);
+        if (info.downloadsCustom) downloadsBox.append(chipButton(t.downloadsReset, async () => { await window.ymMods.moveDownloads(true); renderStorage(); }));
+      }
+      note(downloadsRow, desc, bad);
+      note(cacheRow, t.cache[1](formatSize(info.cacheBytes)));
+      cacheBox.append(chipButton(t.cacheClear, async () => {
+        await window.ymMods.clearCache();
+        await renderStorage();
+        cacheRow.ymDesc.textContent = t.cacheCleared + " · " + cacheRow.ymDesc.textContent;
+        cacheRow.ymDesc.classList.add("ymmods-ok");
+      }));
+    };
+    renderStorage();
+
+    // ── Integrations ──
+    ul.appendChild(makeHeader(t.groupIntegrations, 24));
+    const discordToggle = makeToggle(...t.discordRpc, !!cfg.discordRpc, async (v) => { const r = await window.ymMods.setConfig({ discordRpc: v }); showDiscord(r && r.discord); });
+    ul.appendChild(discordToggle);
+    const showDiscord = (status) => {
+      const msg = t.discordStatus[status] || "";
+      discordToggle.ymDesc.textContent = msg || t.discordRpc[1];
+      discordToggle.ymDesc.classList.toggle("ymmods-ok", status === "connected");
+      discordToggle.ymDesc.classList.toggle("ymmods-note", status === "error");
+    };
+    if (cfg.discordRpc) showDiscord(state.discord);
+    // the connection is made in the background: refresh the status for a while
+    let discordPolls = 0;
+    const discordTimer = setInterval(async () => {
+      if (!discordToggle.isConnected || ++discordPolls > 40) return clearInterval(discordTimer);
+      const st = await window.ymMods.getState();
+      if (st && st.config.discordRpc) showDiscord(st.discord);
+    }, 3000);
+    ul.appendChild(makeRow(t.discordClientId[0], t.discordClientId[1],
+      makeInput(cfg.discordClientId, "123456789012345678", async (v) => { const r = await window.ymMods.setConfig({ discordClientId: v }); showDiscord(r && r.discord); })).li);
+    addToggles(["discordShowPaused"]);
+
+    ul.appendChild(makeToggle(...t.lastfmEnabled, !!cfg.lastfmEnabled, setToggle("lastfmEnabled")));
+    ul.appendChild(makeRow(t.lastfmApiKey[0], t.lastfmApiKey[1], makeInput(cfg.lastfmApiKey, "API key", (v) => window.ymMods.setConfig({ lastfmApiKey: v }))).li);
+    ul.appendChild(makeRow(t.lastfmApiSecret[0], t.lastfmApiSecret[1], makeInput(cfg.lastfmApiSecret, "Shared secret", (v) => window.ymMods.setConfig({ lastfmApiSecret: v }), true)).li);
+    const accountBox = chipGroup();
+    const { li: accountRow } = makeRow(t.lastfmAccount[0], cfg.lastfmUser ? t.lastfmUser(cfg.lastfmUser) : t.lastfmAccount[1], accountBox);
+    ul.appendChild(accountRow);
+    const renderAccount = (user) => {
+      accountBox.textContent = "";
+      note(accountRow, user ? t.lastfmUser(user) : t.lastfmAccount[1]);
+      if (user) accountRow.ymDesc.classList.add("ymmods-ok");
+      accountBox.append(user
+        ? chipButton(t.lastfmLogout, async () => { await window.ymMods.lastfmLogout(); renderAccount(""); })
+        : chipButton(t.lastfmLogin, async () => {
+          note(accountRow, t.lastfmWaiting);
+          const res = await window.ymMods.lastfmLogin();
+          if (res && res.ok) renderAccount(res.user);
+          else note(accountRow, res && res.error === "no-keys" ? t.lastfmNeedKeys : t.failed + (res && res.error ? ": " + res.error : ""), true);
+        }));
+    };
+    renderAccount(cfg.lastfmUser);
 
     // ── Privacy ──
     ul.appendChild(makeHeader(t.groupPrivacy, 24));

@@ -75,7 +75,8 @@ static class Program
             }
             if (silent)
             {
-                Process p = StartInstaller(JoinArgs(args), false);
+                // the copy of this exe in the mod folder is what "Installed apps" runs to remove the mod
+                Process p = StartInstaller(JoinArgs(args) + " -SetupExe " + Quote(Application.ExecutablePath), false);
                 p.WaitForExit();
                 return p.ExitCode;
             }

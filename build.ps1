@@ -17,7 +17,7 @@ $Utf8Bom = New-Object Text.UTF8Encoding($true)
 $Utf8 = New-Object Text.UTF8Encoding($false)
 
 $ModloaderFiles = @("main.js", "preload.js", "features.js", "settings-ui.js", "mini-preload.js", "miniplayer.html",
-  "patcher.js", "watch-update.ps1", "repair.cmd")
+  "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js")
 $ModFiles = @("_hello.js", "theme.css", "profile-menu.css", "vibe-settings.css", "vibe-settings.js", "window-buttons.css")
 
 Remove-Item $Obj -Recurse -Force -ErrorAction SilentlyContinue
