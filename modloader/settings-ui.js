@@ -22,7 +22,7 @@
       hidePlusPromo: ["Скрыть промо Плюса", "Значок и ссылка Плюса в профиле, рекламные баннеры подписки"],
       showVolumePercent: ["Громкость в процентах", "Показывать значение при изменении и при наведении на регулятор"],
       theme: ["Тема", "Оформление поверх стандартного"],
-      themes: { default: "Стандартная", amoled: "AMOLED", glass: "Стекло", contrast: "Контраст" },
+      themes: { default: "Стандартная", amoled: "AMOLED", glass: "Стекло", contrast: "Контраст", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Производительность",
       vibeAnimation: ["Анимация «Моей волны»", "Главная нагрузка на видеокарту. «В фокусе» — анимация замирает, когда вы в другом окне"],
       vibeAnimModes: { on: "Вкл", focus: "В фокусе", off: "Выкл" },
@@ -58,6 +58,21 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Артист",
+      accentFromCover: ["Цвет акцента по обложке", "Жёлтые кнопки и переключатели перекрашиваются в цвет обложки текущего трека"],
+      materialNote: "Mica и Acrylic — прозрачность окна Windows 11: сквозь окно размыт рабочий стол",
+      autoPauseLock: ["Пауза при блокировке компьютера", "Win + L или блокировка по таймеру ставят музыку на паузу"],
+      autoResumeUnlock: ["Продолжать после разблокировки", "Если на паузу поставил мод, после входа музыка продолжится"],
+      autoPauseHeadphones: ["Пауза при отключении наушников", "Когда пропадает устройство, через которое играет звук: наушники выдернули, Bluetooth отключился"],
+      localApi: ["Локальный API и виджет для OBS", "Сервер на этом компьютере (127.0.0.1): виджет «Сейчас играет» для стрима и управление плеером из своих программ"],
+      localApiWidget: ["Виджет для OBS", "Добавьте в OBS источник «Браузер» с этим адресом, например 600×140. Вид: &layout=bar или minimal, &hidePaused=1 — прятать на паузе"],
+      localApiUrl: ["API", "GET /api/now — трек в JSON, /api/events — поток изменений, POST /api/cmd/<команда> — управление с токеном"],
+      localApiToken: ["Токен для команд", "Передавайте в заголовке Authorization: Bearer <токен>. Никому не сообщайте"],
+      localApiPort: ["Порт", "Если занят другой программой — укажите другой (1024–65535)"],
+      copy: "Копировать",
+      copied: "Скопировано",
+      regenerate: "Новый токен",
+      apiOn: (port) => `Работает на порту ${port}`,
+      apiBusy: "Порт занят другой программой — укажите другой",
       groupModUpdate: "Обновления мода",
       modVersion: "Версия мода",
       modInstalled: (v) => `Установлена ${v}`,
@@ -124,7 +139,7 @@
       hidePlusPromo: ["Hide Plus promo", "Plus badge and link in the profile, subscription banners"],
       showVolumePercent: ["Volume in percent", "Show the value on change and when hovering the volume control"],
       theme: ["Theme", "Styling on top of the standard look"],
-      themes: { default: "Standard", amoled: "AMOLED", glass: "Glass", contrast: "Contrast" },
+      themes: { default: "Standard", amoled: "AMOLED", glass: "Glass", contrast: "Contrast", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Performance",
       vibeAnimation: ["My Vibe animation", "The main GPU load. \"When focused\" stops it while you are in another window"],
       vibeAnimModes: { on: "On", focus: "When focused", off: "Off" },
@@ -160,6 +175,21 @@
       album: "Album",
       playlist: "Playlist",
       artistTile: "Artist",
+      accentFromCover: ["Accent from the cover", "Yellow buttons and switches take the colour of the current track's cover"],
+      materialNote: "Mica and Acrylic are Windows 11 window transparency: the desktop is blurred through the window",
+      autoPauseLock: ["Pause when the computer is locked", "Win + L or a timeout lock pauses the music"],
+      autoResumeUnlock: ["Resume after unlocking", "If the mod paused it, music continues after you sign back in"],
+      autoPauseHeadphones: ["Pause when headphones are unplugged", "When the device the sound plays through disappears: headphones pulled out, Bluetooth disconnected"],
+      localApi: ["Local API and OBS widget", "A server on this computer (127.0.0.1): a “now playing” widget for streams and player control from your own programs"],
+      localApiWidget: ["OBS widget", "Add a Browser source with this address in OBS, e.g. 600×140. Look: &layout=bar or minimal, &hidePaused=1 hides it while paused"],
+      localApiUrl: ["API", "GET /api/now — track as JSON, /api/events — stream of changes, POST /api/cmd/<command> — control with the token"],
+      localApiToken: ["Command token", "Send it as Authorization: Bearer <token>. Do not share it"],
+      localApiPort: ["Port", "If another program uses it, pick another one (1024–65535)"],
+      copy: "Copy",
+      copied: "Copied",
+      regenerate: "New token",
+      apiOn: (port) => `Running on port ${port}`,
+      apiBusy: "The port is used by another program — pick another one",
       groupModUpdate: "Mod updates",
       modVersion: "Mod version",
       modInstalled: (v) => `Installed ${v}`,
@@ -226,7 +256,7 @@
       hidePlusPromo: ["Плюс промосын жасыру", "Профильдегі Плюс белгісі мен сілтемесі, жазылым баннерлері"],
       showVolumePercent: ["Дыбыс деңгейі пайызбен", "Өзгергенде және реттегішке меңзегенде мәнін көрсету"],
       theme: ["Тақырып", "Стандартты безендіру үстінен"],
-      themes: { default: "Стандартты", amoled: "AMOLED", glass: "Шыны", contrast: "Контраст" },
+      themes: { default: "Стандартты", amoled: "AMOLED", glass: "Шыны", contrast: "Контраст", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Өнімділік",
       vibeAnimation: ["«Менің толқыным» анимациясы", "Бейнекартаға негізгі жүктеме. «Фокуста» — басқа терезеде болғанда анимация тоқтайды"],
       vibeAnimModes: { on: "Қосу", focus: "Фокуста", off: "Өшіру" },
@@ -262,6 +292,21 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Әртіс",
+      accentFromCover: ["Акцент түсі мұқабадан", "Сары түймелер мен ауыстырғыштар ағымдағы трек мұқабасының түсіне боялады"],
+      materialNote: "Mica және Acrylic — Windows 11 терезе мөлдірлігі: терезе арқылы жұмыс үстелі бұлдырап көрінеді",
+      autoPauseLock: ["Компьютер құлыпталғанда кідірту", "Win + L немесе таймер бойынша құлыптау музыканы кідіртеді"],
+      autoResumeUnlock: ["Құлып ашылғаннан кейін жалғастыру", "Егер мод кідірткен болса, кіргеннен кейін музыка жалғасады"],
+      autoPauseHeadphones: ["Құлаққап ажыратылғанда кідірту", "Дыбыс шығып тұрған құрылғы жоғалғанда: құлаққап суырылды, Bluetooth ажыратылды"],
+      localApi: ["Жергілікті API және OBS виджеті", "Осы компьютердегі сервер (127.0.0.1): стримге «Қазір ойнап тұр» виджеті және өз бағдарламаларыңыздан басқару"],
+      localApiWidget: ["OBS виджеті", "OBS-те осы мекенжаймен «Браузер» көзін қосыңыз, мысалы 600×140. Көрініс: &layout=bar не minimal, &hidePaused=1 — кідірісте жасыру"],
+      localApiUrl: ["API", "GET /api/now — трек JSON-да, /api/events — өзгерістер ағыны, POST /api/cmd/<команда> — токенмен басқару"],
+      localApiToken: ["Командалар токені", "Authorization: Bearer <токен> тақырыбында жіберіңіз. Ешкімге айтпаңыз"],
+      localApiPort: ["Порт", "Басқа бағдарлама пайдаланса — басқасын көрсетіңіз (1024–65535)"],
+      copy: "Көшіру",
+      copied: "Көшірілді",
+      regenerate: "Жаңа токен",
+      apiOn: (port) => `${port} портында жұмыс істеп тұр`,
+      apiBusy: "Портты басқа бағдарлама пайдаланып тұр — басқасын көрсетіңіз",
       groupModUpdate: "Мод жаңартулары",
       modVersion: "Мод нұсқасы",
       modInstalled: (v) => `Орнатылған ${v}`,
@@ -328,7 +373,7 @@
       hidePlusPromo: ["Plus promosini yashirish", "Profildagi Plus belgisi va havolasi, obuna bannerlari"],
       showVolumePercent: ["Ovoz balandligi foizda", "O‘zgarganda va boshqaruvchi ustiga kursor olib kelinganda qiymatni ko‘rsatish"],
       theme: ["Mavzu", "Standart ko‘rinish ustidan bezak"],
-      themes: { default: "Standart", amoled: "AMOLED", glass: "Shisha", contrast: "Kontrast" },
+      themes: { default: "Standart", amoled: "AMOLED", glass: "Shisha", contrast: "Kontrast", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Unumdorlik",
       vibeAnimation: ["«Mening to‘lqinim» animatsiyasi", "Videokartaga asosiy yuklama. «Fokusda» — boshqa oynada bo‘lganingizda animatsiya to‘xtaydi"],
       vibeAnimModes: { on: "Yoqiq", focus: "Fokusda", off: "O‘chiq" },
@@ -364,6 +409,21 @@
       album: "Albom",
       playlist: "Pleylist",
       artistTile: "Ijrochi",
+      accentFromCover: ["Aksent rangi muqovadan", "Sariq tugmalar va almashtirgichlar joriy trek muqovasi rangiga bo‘yaladi"],
+      materialNote: "Mica va Acrylic — Windows 11 oyna shaffofligi: oyna orqali ish stoli xira ko‘rinadi",
+      autoPauseLock: ["Kompyuter qulflanganda pauza", "Win + L yoki taymer bo‘yicha qulflash musiqani pauza qiladi"],
+      autoResumeUnlock: ["Qulf ochilgandan keyin davom ettirish", "Agar pauzani mod qo‘ygan bo‘lsa, kirgandan keyin musiqa davom etadi"],
+      autoPauseHeadphones: ["Quloqchin uzilganda pauza", "Ovoz chiqayotgan qurilma yo‘qolganda: quloqchin sug‘urildi, Bluetooth uzildi"],
+      localApi: ["Mahalliy API va OBS vidjeti", "Shu kompyuterdagi server (127.0.0.1): striming uchun «Hozir ijroda» vidjeti va o‘z dasturlaringizdan boshqarish"],
+      localApiWidget: ["OBS vidjeti", "OBS’da shu manzil bilan «Brauzer» manbasini qo‘shing, masalan 600×140. Ko‘rinish: &layout=bar yoki minimal, &hidePaused=1 — pauzada yashirish"],
+      localApiUrl: ["API", "GET /api/now — trek JSON’da, /api/events — o‘zgarishlar oqimi, POST /api/cmd/<buyruq> — token bilan boshqarish"],
+      localApiToken: ["Buyruqlar tokeni", "Authorization: Bearer <token> sarlavhasida yuboring. Hech kimga aytmang"],
+      localApiPort: ["Port", "Boshqa dastur band qilgan bo‘lsa — boshqasini ko‘rsating (1024–65535)"],
+      copy: "Nusxalash",
+      copied: "Nusxalandi",
+      regenerate: "Yangi token",
+      apiOn: (port) => `${port}-portda ishlamoqda`,
+      apiBusy: "Port boshqa dastur tomonidan band — boshqasini ko‘rsating",
       groupModUpdate: "Mod yangilanishlari",
       modVersion: "Mod versiyasi",
       modInstalled: (v) => `O‘rnatilgan ${v}`,
@@ -674,6 +734,7 @@
     miniButton.addEventListener("click", () => window.ymMods.toggleMiniPlayer());
     ul.appendChild(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
     addToggles(["miniPlayerOnTop", "miniPlayerLarge", "thumbarButtons", "showQuality", "playlistSearch"]);
+    addToggles(["autoPauseLock", "autoResumeUnlock", "autoPauseHeadphones"]);
 
     const sleepDesc = (info) => (info && info.mode === "minutes" ? t.sleepActiveMin(info.minutesLeft) : info && info.mode === "track" ? t.sleepActiveTrack : t.sleep[1]);
     const sleepValue = (info) => (!info || info.mode === "off" ? "off" : info.mode === "track" ? "track" : "active");
@@ -742,8 +803,9 @@
 
     // ── Appearance ──
     ul.appendChild(makeHeader(t.groupLook, 24));
-    const themeChips = makeChips(Object.entries(t.themes), cfg.theme || "default", (value) => window.ymMods.setConfig({ theme: value }));
-    ul.appendChild(makeRow(t.theme[0], t.theme[1], themeChips).li);
+    const themeChips = makeChips(Object.entries(t.themes).filter(([k]) => state.materials || (k !== "mica" && k !== "acrylic")), cfg.theme || "default", (value) => window.ymMods.setConfig({ theme: value }));
+    ul.appendChild(makeRow(t.theme[0], state.materials ? t.theme[1] + ". " + t.materialNote : t.theme[1], themeChips).li);
+    addToggles(["accentFromCover"]);
     const zoomValues = [0.9, 1, 1.1, 1.25, 1.5];
     const zoomNow = zoomValues.find((z) => Math.abs(z - (cfg.zoomFactor || 1)) < 0.001);
     const zoomChips = makeChips(zoomValues.map((z) => [String(z), Math.round(z * 100) + "%"]), zoomNow ? String(zoomNow) : null,
@@ -838,6 +900,40 @@
         }));
     };
     renderAccount(cfg.lastfmUser);
+
+    // ── Local API / OBS widget ──
+    const copyButton = (getText) => {
+      const b = chipButton(t.copy, async () => {
+        try { await navigator.clipboard.writeText(getText()); b.textContent = t.copied; setTimeout(() => { b.textContent = t.copy; }, 1500); } catch {}
+      });
+      return b;
+    };
+    let apiInfo = null;
+    const apiToggle = makeToggle(...t.localApi, !!cfg.localApi, async (v) => { await window.ymMods.setConfig({ localApi: v }); renderApi(); });
+    ul.appendChild(apiToggle);
+    const widgetBox = chipGroup(), urlBox = chipGroup(), tokenBox = chipGroup();
+    const { li: widgetRow } = makeRow(t.localApiWidget[0], t.localApiWidget[1], widgetBox);
+    const { li: urlRow } = makeRow(t.localApiUrl[0], t.localApiUrl[1], urlBox);
+    const { li: tokenRow } = makeRow(t.localApiToken[0], t.localApiToken[1], tokenBox);
+    const { li: portRow } = makeRow(t.localApiPort[0], t.localApiPort[1],
+      makeInput(String(cfg.localApiPort || 24850), "24850", async (v) => { const n = parseInt(v, 10); if (n >= 1024 && n <= 65535) await window.ymMods.setConfig({ localApiPort: n }); renderApi(); }));
+    const localApiRow = [widgetRow, urlRow, tokenRow, portRow];
+    localApiRow.forEach((row) => ul.appendChild(row));
+    const mono = (textValue) => { const c = document.createElement("code"); c.textContent = textValue; c.style.cssText = "font:12px/16px ui-monospace,Consolas,monospace;opacity:.8;user-select:all;margin-right:6px;align-self:center;overflow-wrap:anywhere"; return c; };
+    const renderApi = async () => {
+      apiInfo = await window.ymMods.localApi();
+      const on = apiInfo && apiInfo.enabled;
+      localApiRow.forEach((row) => { row.style.display = on ? "" : "none"; });
+      if (!on) { apiToggle.ymDesc.textContent = t.localApi[1]; apiToggle.ymDesc.classList.remove("ymmods-ok", "ymmods-note"); return; }
+      apiToggle.ymDesc.textContent = apiInfo.error === "port-busy" ? t.apiBusy : apiInfo.status === "on" ? t.apiOn(apiInfo.port) : t.localApi[1];
+      apiToggle.ymDesc.classList.toggle("ymmods-ok", apiInfo.status === "on");
+      apiToggle.ymDesc.classList.toggle("ymmods-note", apiInfo.status === "error");
+      widgetBox.textContent = ""; urlBox.textContent = ""; tokenBox.textContent = "";
+      widgetBox.append(mono(apiInfo.widget), copyButton(() => apiInfo.widget));
+      urlBox.append(mono(apiInfo.api), copyButton(() => apiInfo.api));
+      tokenBox.append(mono(apiInfo.token.slice(0, 6) + "…"), copyButton(() => apiInfo.token), chipButton(t.regenerate, async () => { await window.ymMods.localApi("regen"); renderApi(); }));
+    };
+    renderApi();
 
     // ── Privacy ──
     ul.appendChild(makeHeader(t.groupPrivacy, 24));

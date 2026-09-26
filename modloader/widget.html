@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Now playing — Yandex Music</title>
+<!--
+  OBS "now playing" widget, served by the mod's local API (http://127.0.0.1:<port>/widget).
+  Add it in OBS as a Browser source (e.g. 600×140). Options in the address:
+    layout=card | bar | minimal   (default card)
+    hidePaused=1                  hide while music is paused
+    accent=cover | yellow | #hex  progress colour (default cover)
+    progress=0                    no progress bar
+    align=left | right            (default left)
+-->
+<style>
+  @font-face { font-family: "YS Text"; src: url("/fonts/text.woff2") format("woff2"); font-weight: 400; }
+  @font-face { font-family: "YS Text"; src: url("/fonts/medium.woff2") format("woff2"); font-weight: 500; }
+  @font-face { font-family: "YS Text"; src: url("/fonts/bold.woff2") format("woff2"); font-weight: 700; }
+  :root { --accent: #ff0; }
+  html, body { margin: 0; background: transparent; overflow: hidden; font-family: "YS Text", "Segoe UI", system-ui, sans-serif; color: #fff; }
+  .card { position: relative; display: flex; align-items: center; gap: 16px; box-sizing: border-box; width: 100%; max-width: 600px; margin: 10px;
+    padding: 14px 20px 14px 14px; border-radius: 24px; overflow: hidden; background: rgba(12,12,12,.72); box-shadow: 0 8px 28px rgba(0,0,0,.35);
+    transition: opacity .5s ease, transform .5s ease; }
+  body.right .card { margin-left: auto; flex-direction: row-reverse; text-align: right; padding: 14px 14px 14px 20px; }
+  .hidden .card { opacity: 0; transform: translateY(12px); }
+  .bg { position: absolute; inset: -90px; background: center / cover no-repeat; filter: blur(32px) saturate(1.6) brightness(.55); opacity: .9; transition: opacity .8s; }
+  .cover { position: relative; flex: none; width: 88px; height: 88px; border-radius: 16px; background: #222 center / cover no-repeat; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+  .cover img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; transition: opacity .6s; }
+  .meta { position: relative; min-width: 0; flex: 1; }
+  .label { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+  body.right .label { justify-content: flex-end; }
+  .eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 10px; }
+  .eq i { width: 3px; background: var(--accent); border-radius: 1px; animation: eq 0.9s ease-in-out infinite; }
+  .eq i:nth-child(2) { animation-delay: -.3s; } .eq i:nth-child(3) { animation-delay: -.6s; }
+  .paused .eq i { animation-play-state: paused; height: 3px; }
+  @keyframes eq { 0%, 100% { height: 3px; } 50% { height: 10px; } }
+  .title { font-size: 22px; line-height: 27px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { font-size: 16px; line-height: 21px; color: rgba(255,255,255,.72); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .progress { margin-top: 10px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.18); overflow: hidden; }
+  .fill { height: 100%; width: 0; background: var(--accent); border-radius: 2px; }
+  .swap { animation: swap .5s ease; }
+  @keyframes swap { from { opacity: 0; transform: translateY(6px); } }
+  /* bar: one slim line */
+  .layout-bar .card { padding: 8px 18px 8px 8px; border-radius: 999px; gap: 12px; }
+  .layout-bar .cover { width: 44px; height: 44px; border-radius: 50%; }
+  .layout-bar .label { display: none; }
+  .layout-bar .title { font-size: 17px; line-height: 22px; display: inline; }
+  .layout-bar .artist { font-size: 15px; display: inline; }
+  .layout-bar .artist::before { content: " — "; }
+  .layout-bar .title-row { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .layout-bar .progress { margin-top: 6px; height: 3px; }
+  /* minimal: text only, for a corner of the screen */
+  .layout-minimal .card { background: none; box-shadow: none; padding: 0; }
+  .layout-minimal .bg, .minimal .cover { display: none; }
+  .layout-minimal .title, .minimal .artist { text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+  .noprogress .progress { display: none; }
+</style>
+</head>
+<body class="hidden">
+<div class="card">
+  <div class="bg" id="bg"></div>
+  <div class="cover" id="cover"></div>
+  <div class="meta">
+    <div class="label"><span class="eq"><i></i><i></i><i></i></span><span id="label">Yandex Music</span></div>
+    <div class="title-row"><div class="title" id="title"></div><div class="artist" id="artist"></div></div>
+    <div class="progress"><div class="fill" id="fill"></div></div>
+  </div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const layout = ["card", "bar", "minimal"].includes(q.get("layout")) ? q.get("layout") : "card";
+  document.body.classList.add("layout-" + layout);
+  if (q.get("align") === "right") document.body.classList.add("right");
+  if (q.get("progress") === "0") document.body.classList.add("noprogress");
+  const hidePaused = q.get("hidePaused") === "1";
+  const accentMode = q.get("accent") || "cover";
+  if (/^#?[0-9a-f]{3,8}$/i.test(accentMode)) document.documentElement.style.setProperty("--accent", accentMode.startsWith("#") ? accentMode : "#" + accentMode);
+  const el = (id) => document.getElementById(id);
+  let state = null, key = "";
+  const setCover = (url) => {
+    const box = el("cover");
+    const img = new Image();
+    img.onload = () => { box.textContent = ""; box.appendChild(img); el("bg").style.backgroundImage = `url("${url}")`; };
+    img.src = url;
+  };
+  const render = (s) => {
+    state = s;
+    const has = !!s.title;
+    document.body.classList.toggle("hidden", !has || (hidePaused && !s.playing));
+    document.body.classList.toggle("paused", !s.playing);
+    const k = s.title + "\u0000" + s.artist;
+    if (k !== key) {
+      key = k;
+      el("title").textContent = s.title;
+      el("artist").textContent = s.artist;
+      for (const id of ["title", "artist"]) { el(id).classList.remove("swap"); void el(id).offsetWidth; el(id).classList.add("swap"); }
+      if (s.cover) setCover(s.cover);
+    }
+    if (accentMode === "cover" && s.accent) document.documentElement.style.setProperty("--accent", s.accent);
+  };
+  // the position is extrapolated between updates while playing
+  const tick = () => {
+    if (state && state.duration) {
+      const pos = Math.min(state.duration, state.position + (state.playing ? (Date.now() - state.at) / 1000 : 0));
+      el("fill").style.width = (pos / state.duration) * 100 + "%";
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  const connect = () => {
+    const es = new EventSource("/api/events");
+    es.onmessage = (e) => { try { render(JSON.parse(e.data)); } catch {} };
+    es.onerror = () => { document.body.classList.add("hidden"); };
+  };
+  connect();
+</script>
+</body>
+</html>

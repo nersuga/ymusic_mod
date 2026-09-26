@@ -66,10 +66,10 @@
   };
 
   const TEXT = {
-    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено", repeatBtn: "Повтор трека", download: "Скачать", downloaded: "Скачано", downloading: "Скачиваю трек…", mini: "Мини-плеер" },
-    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found", repeatBtn: "Repeat track", download: "Download", downloaded: "Downloaded", downloading: "Downloading the track…", mini: "Mini player" },
-    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш" },
-    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer" },
+    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено", repeatBtn: "Повтор трека", download: "Скачать", downloaded: "Скачано", downloading: "Скачиваю трек…", mini: "Мини-плеер", headphones: "Пауза: устройство вывода звука отключено" },
+    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found", repeatBtn: "Repeat track", download: "Download", downloaded: "Downloaded", downloading: "Downloading the track…", mini: "Mini player", headphones: "Paused: the audio output was disconnected" },
+    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш", headphones: "Кідірту: дыбыс шығару құрылғысы ажыратылды" },
+    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer", headphones: "Pauza: ovoz chiqarish qurilmasi uzildi" },
   };
   const lang = () => { let l = ""; try { l = JSON.parse(localStorage.getItem("funtech-lang") || "{}").value || ""; } catch {} return (l || document.documentElement.lang || "ru").slice(0, 2); };
   const text = () => TEXT[lang()] || TEXT.en;
@@ -316,6 +316,8 @@
       const s = sonata();
       const meta = s && s.entityMeta;
       if (meta && meta.title === st.title) {
+        const a = accentFor(meta.averageColor);
+        st.accent = a ? a.base : "";
         st.trackId = String(meta.id || "");
         st.albumId = meta.albumId ? String(meta.albumId) : (meta.albums && meta.albums[0] ? String(meta.albums[0].id) : "");
         if (meta.artists && meta.artists[0]) st.scrobbleArtist = meta.artists[0].name;
@@ -647,6 +649,80 @@
     wantModNotes = false;
   };
 
+  // ── Accent from the cover: the app's yellow controls take the average colour of the current cover ──
+  // (lightened and saturated enough for the black icons on accent buttons to stay readable)
+  const hexToHsl = (hex) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return null;
+    const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+    let h = 0, sat = 0;
+    if (max !== min) {
+      const d = max - min;
+      sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h *= 60;
+    }
+    return { h, s: sat, l };
+  };
+  // relative luminance (WCAG) of an HSL colour
+  const luminance = (h, sat, l) => {
+    const k = (n) => (n + h / 30) % 12, a = sat * Math.min(l, 1 - l);
+    const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * lin(f(0)) + 0.7152 * lin(f(8)) + 0.0722 * lin(f(4));
+  };
+  const hsl = (h, sat, l, a = 1) => `hsla(${Math.round(h)},${Math.round(sat * 100)}%,${Math.round(l * 100)}%,${a})`;
+  const accentFor = (average) => {
+    const c = hexToHsl(average);
+    if (!c || c.s < 0.12) return null; // grey or black-and-white cover: keep the app's yellow
+    const sat = Math.max(c.s, 0.65);
+    // lighten until the colour is bright enough to the eye (blue and violet look much darker than yellow
+    // at the same HSL lightness): black icons on it and coloured text on dark surfaces stay readable
+    let l = Math.max(c.l, 0.6);
+    while (l < 0.86 && luminance(c.h, sat, l) < 0.42) l += 0.02;
+    return { base: hsl(c.h, sat, l), hover: hsl(c.h, sat, l - 0.1), pressed: hsl(c.h, sat, Math.min(0.85, l + 0.12)), focus: hsl(c.h, sat, l, 0.5) };
+  };
+  const accentStyle = document.createElement("style");
+  accentStyle.id = "ymmods-accent";
+  let accentKey = "";
+  const updateAccent = (average) => {
+    const on = document.documentElement.hasAttribute("data-ym-accent-cover");
+    const a = on ? accentFor(average) : null;
+    const key = a ? a.base : "";
+    if (key === accentKey) return;
+    accentKey = key;
+    if (!a) { accentStyle.textContent = ""; return; }
+    if (!accentStyle.isConnected) document.head.appendChild(accentStyle);
+    accentStyle.textContent = `.ym-dark-theme.ym-dark-theme.ym-dark-theme{--ym-controls-color-primary-default-enabled:${a.base};--ym-controls-color-primary-default-hovered:${a.hover};` +
+      `--ym-controls-color-primary-default-pressed:${a.pressed};--ym-controls-color-primary-default-focused_stroke:${a.focus};` +
+      `--ym-controls-color-primary-outline-hovered_stroke:${a.hover};--ym-controls-color-primary-outline-selected_stroke:${a.base};` +
+      `--ym-controls-color-primary-outline-focused_stroke:${a.focus};--ym-logo-color-primary-variant:${a.base};--ym-logo-color-primary-player:${a.base};--ym-logo-color-primary-text:${a.base}}`;
+  };
+
+  // ── Auto pause when the audio output device in use disappears (headphones unplugged, Bluetooth off) ──
+  let outputs = null; // Map deviceId -> groupId of the audio outputs
+  const readOutputs = async () => {
+    const list = await navigator.mediaDevices.enumerateDevices();
+    return new Map(list.filter((d) => d.kind === "audiooutput").map((d) => [d.deviceId, d.groupId]));
+  };
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    readOutputs().then((m) => { outputs = m; }).catch(() => {});
+    navigator.mediaDevices.addEventListener("devicechange", async () => {
+      let now;
+      try { now = await readOutputs(); } catch { return; }
+      const before = outputs;
+      outputs = now;
+      if (!before || !document.documentElement.hasAttribute("data-ym-autopause-headphones")) return;
+      // the "default" entry is the device Windows plays through: paused when its device group is gone
+      const defaultGroup = before.get("default");
+      const removed = [...before.entries()].filter(([id]) => id !== "default" && id !== "communications" && !now.has(id));
+      if (!removed.length || !removed.some(([, group]) => group === defaultGroup)) return;
+      const s = sonata(), pb = playback();
+      if (pb && s && s.status === "playing") { pb.pause(); notify(text().headphones || "⏸"); }
+    });
+  }
+
   // ── Search in the "Add to playlist" submenu ──
   const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
   const norm = (v) => v.toLowerCase().replace(/ё/g, "е").trim();
@@ -711,6 +787,7 @@
     checkMenus();
     updateRepeatButton();
     updateMiniButton();
+    try { const meta = sonata() && sonata().entityMeta; updateAccent(meta && meta.averageColor); } catch {}
     updateModVersion();
     if (s.volume !== null && lastVolume !== null && Math.abs(s.volume - lastVolume) > 0.001) showVolume(s.volume);
     lastVolume = s.volume;

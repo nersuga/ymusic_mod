@@ -12,8 +12,9 @@ const { DiscordPresence, activityFor } = require("./discord");
 const { LastFm } = require("./lastfm");
 const storage = require("./storage");
 const { ModUpdater } = require("./updater");
+const { LocalApi } = require("./localapi");
 
-const { app, ipcMain, session, shell, webFrameMain, Tray, MenuItem, BrowserWindow, dialog, globalShortcut, screen } = electron;
+const { app, ipcMain, session, shell, webFrameMain, Tray, MenuItem, BrowserWindow, dialog, globalShortcut, screen, powerMonitor } = electron;
 const MOD_HOME = __dirname;
 const APP_URL_PREFIX = "music-application://";
 
@@ -88,11 +89,18 @@ module.exports = ({ appRequire, appDir } = {}) => {
     modAutoUpdate: false, // install mod updates from GitHub automatically (when the app quits)
     modUpdateNotified: "", // the version the "update available" notice was shown for
     modLastVersion: "", // mod version seen at the last start: a change means the mod was just updated
+    accentFromCover: false, // the app's yellow accent follows the average colour of the cover
+    autoPauseLock: false, // pause when the computer is locked
+    autoResumeUnlock: true, // …and play again after unlocking (only if the mod paused it)
+    autoPauseHeadphones: false, // pause when the audio output device in use disappears
+    localApi: false, // local HTTP API + OBS widget on 127.0.0.1
+    localApiPort: 24850,
+    localApiToken: "",
   };
   // Set only by the main process (dedicated IPC), never by a config patch from the page
-  const PROTECTED_KEYS = new Set(["modUpdateNotified", "modLastVersion", "lastfmSession", "lastfmUser", "sessionDataDir", "downloadsMove", "downloadsMoveResult", "wheelItems", "miniPlayerBounds"]);
+  const PROTECTED_KEYS = new Set(["localApiToken", "modUpdateNotified", "modLastVersion", "lastfmSession", "lastfmUser", "sessionDataDir", "downloadsMove", "downloadsMoveResult", "wheelItems", "miniPlayerBounds"]);
   // Not written into exported settings files: credentials
-  const PRIVATE_KEYS = ["lastfmSession", "lastfmUser", "lastfmApiSecret", "sessionDataDir", "downloadsMove", "downloadsMoveResult"];
+  const PRIVATE_KEYS = ["localApiToken", "lastfmSession", "lastfmUser", "lastfmApiSecret", "sessionDataDir", "downloadsMove", "downloadsMoveResult"];
   const config = () => {
     try {
       const file = JSON.parse(fs.readFileSync(configFile, "utf8").replace(/^﻿/, ""));
@@ -215,6 +223,9 @@ module.exports = ({ appRequire, appDir } = {}) => {
     mainWin = win;
     win.on("hide", () => { hiddenAt = Date.now(); lastTrim = 0; });
     win.on("show", () => { hiddenAt = 0; restore(); updateThumbar(); });
+    applyWindowMaterial();
+    // a page load resets the view's background to opaque: set the material again
+    wc.on("did-finish-load", applyWindowMaterial);
     // Windows drops the thumbnail buttons when the taskbar button is recreated (hide/show, restore)
     win.on("restore", updateThumbar);
     wc.on("did-finish-load", updateThumbar);
@@ -270,6 +281,15 @@ module.exports = ({ appRequire, appDir } = {}) => {
     '[data-test-id="WHEEL_DESKTOP"][data-ym-fit] .swiper-wrapper{justify-content:center!important;transform:none!important}' +
     // Vibe page content root (overflow:hidden) starts below the title bar and before the right edge: it cuts the vibe canvas
     '[class*="Content_root_newVibe"]{margin-top:calc(-12px - 20px)!important;padding-top:20px!important;margin-right:-12px!important;padding-right:12px!important}';
+  // Mica / Acrylic: Windows 11 draws the blurred desktop behind the window; the app's surfaces become translucent
+  const MATERIAL_CSS = ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:rgba(20,20,20,.42);--ym-background-color-primary-enabled-player:rgba(20,20,20,.38);" +
+    "--ym-background-color-primary-enabled-popover:rgba(30,30,30,.72);--ym-background-color-primary-enabled-menu:rgba(30,30,30,.7);" +
+    "--ym-background-color-primary-enabled-basic:transparent;--ym-background-color-primary-enabled-vibe:transparent;--ym-background-color-primary-enabled-header:rgba(20,20,20,.3)}" +
+    "html,body{background:transparent!important}" +
+    "[class*='DefaultLayout_rootNewVibe']{background:transparent!important}" +
+    "section[class*='PlayerBarDesktop']{background:rgba(20,20,20,.38)!important}" +
+    "[class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}" +
+    "[class*='StickyHeader_container']{background:transparent!important;backdrop-filter:blur(24px) saturate(140%)}";
   // Themes override the app's own colour variables (defined on .ym-dark-theme; doubled class = higher priority)
   const THEME_CSS = {
     amoled: ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:#000;--ym-background-color-primary-enabled-player:#000;" +
@@ -296,6 +316,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
       "[role=menu]:not(button),[role=dialog]:not(button){backdrop-filter:blur(30px) saturate(150%)}" +
       // sticky page headers stack their own translucent layer on the content's one: a dark strip
       "[class*='StickyHeader_container']{background:transparent!important;backdrop-filter:blur(24px) saturate(140%)}",
+    mica: MATERIAL_CSS,
+    acrylic: MATERIAL_CSS,
     contrast: ".ym-dark-theme.ym-dark-theme{--ym-controls-color-primary-text-enabled:hsla(0,0%,100%,.82);--ym-controls-color-secondary-text-enabled:hsla(0,0%,100%,.8);" +
       "--ym-controls-color-primary-text-disabled:#8a8a8a;--ym-controls-color-secondary-outline-enabled_stroke:#8a8a8a;--ym-controls-color-primary-outline-enabled:#666;" +
       "--ym-outline-color-primary-disabled:hsla(0,0%,100%,.14)}",
@@ -312,6 +334,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (THEME_CSS[cfg.theme]) css += THEME_CSS[cfg.theme];
     wc.executeJavaScript(`document.documentElement.toggleAttribute("data-ym-no-volume-percent", ${!cfg.showVolumePercent});` +
       `document.documentElement.toggleAttribute("data-ym-no-quality", ${!cfg.showQuality});` +
+      `document.documentElement.toggleAttribute("data-ym-accent-cover", ${!!cfg.accentFromCover});` +
+      `document.documentElement.toggleAttribute("data-ym-autopause-headphones", ${!!cfg.autoPauseHeadphones});` +
       `document.documentElement.toggleAttribute("data-ym-no-plsearch", ${!cfg.playlistSearch});` +
       `document.documentElement.setAttribute("data-ym-anim", ${JSON.stringify(cfg.vibeAnimation)})`).catch(() => {});
     const prev = featureCssKeys.get(wc);
@@ -395,7 +419,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     try { files = fs.readdirSync(modsDir).filter(isModFile).sort((a, b) => a.replace(/^_/, "").localeCompare(b.replace(/^_/, ""))); } catch {}
     const cfg = config();
     for (const key of ["lastfmSession", "lastfmApiSecret"]) if (cfg[key]) cfg[key] = "•"; // the page only needs to know they are set
-    return { config: cfg, mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo(), discord: discord.status };
+    return { config: cfg, mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo(), discord: discord.status, materials: materialSupported() };
   });
   const applyConfigPatch = (cfg, patch) => {
     for (const [key, value] of Object.entries(patch)) {
@@ -407,6 +431,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
         cfg.hotkeys = hotkeys;
       } else if (key === "theme") {
         if (value in THEME_CSS || value === "default") cfg.theme = value;
+      } else if (key === "localApiPort") {
+        if (Number.isInteger(value) && value >= 1024 && value <= 65535) cfg.localApiPort = value;
       } else if (key === "vibeAnimation") {
         if (["on", "focus", "off"].includes(value)) cfg.vibeAnimation = value;
       } else if (PROTECTED_KEYS.has(key)) {
@@ -434,6 +460,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (["discordRpc", "discordClientId", "discordShowPaused"].some((k) => k in patch)) configureDiscord();
     if (["lastfmEnabled", "lastfmApiKey", "lastfmApiSecret"].some((k) => k in patch)) configureLastFm();
     if (patch.modAutoUpdate) afterUpdateCheck();
+    if ("theme" in patch) applyWindowMaterial();
+    if (["localApi", "localApiPort"].some((k) => k in patch)) configureLocalApi();
     return { ok: true, hotkeyStatus, discord: discord.status };
   });
   ipcMain.handle("ymmods:toggle", (event, name, enabled) => {
@@ -643,6 +671,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     sendMini();
     pushPresence();
     lastfm.update(state);
+    localApi.push();
     if (langChanged) updateThumbar();
     const key = trackKey(state);
     if (sleep.mode === "track") {
@@ -1028,6 +1057,97 @@ module.exports = ({ appRequire, appDir } = {}) => {
     return true;
   });
 
+  // ── Mica / Acrylic window material (Windows 11 22H2+) ────────────────────
+  const MATERIALS = { mica: "mica", acrylic: "acrylic" };
+  const materialSupported = () => {
+    if (process.platform !== "win32") return false;
+    const build = Number(String(process.getSystemVersion ? process.getSystemVersion() : os.release()).split(".")[2]) || 0;
+    return build >= 22621;
+  };
+  let originalBackground = null;
+  let materialOn = false;
+  const patchedWindows = new WeakSet();
+  const applyWindowMaterial = () => {
+    if (!mainWin || mainWin.isDestroyed() || !materialSupported() || typeof mainWin.setBackgroundMaterial !== "function") return;
+    const win = mainWin;
+    // The app sets its own background colour (#000 / #fff by theme) after start: while a material is on,
+    // that colour is only remembered (and restored when the material is switched off)
+    if (!patchedWindows.has(win)) {
+      patchedWindows.add(win);
+      const setBackground = win.setBackgroundColor.bind(win);
+      win.setBackgroundColor = (color) => { if (materialOn && color !== "#00000000") { originalBackground = color; return; } setBackground(color); };
+      win.__ymSetBackground = setBackground;
+    }
+    const material = MATERIALS[config().theme];
+    try {
+      if (material) {
+        if (originalBackground === null) originalBackground = win.getBackgroundColor();
+        materialOn = true;
+        win.__ymSetBackground("#00000000");
+        win.setBackgroundMaterial(material);
+      } else if (materialOn) {
+        materialOn = false;
+        win.setBackgroundMaterial("none");
+        win.__ymSetBackground(originalBackground || "#000000");
+      }
+    } catch (e) { log.error("window material", e); }
+  };
+
+  // ── Auto pause: computer locked (main process); headphones unplugged (page, see features.js) ──
+  let pausedByLock = false;
+  app.on("ready", () => {
+    powerMonitor.on("lock-screen", () => {
+      if (!config().autoPauseLock || !isPlaying) return;
+      pausedByLock = true;
+      appAction("PAUSE");
+      log.info("paused: screen locked");
+    });
+    powerMonitor.on("unlock-screen", () => {
+      if (!pausedByLock) return;
+      pausedByLock = false;
+      if (config().autoResumeUnlock && !isPlaying) { appAction("PLAY"); log.info("resumed: screen unlocked"); }
+    });
+  });
+
+  // ── Local API and the OBS widget ─────────────────────────────────────────
+  const localApi = new LocalApi({
+    log,
+    widgetFile: path.join(MOD_HOME, "widget.html"),
+    fontsDir: path.join(appDir || path.join(process.resourcesPath, "app.asar"), "app", "fonts"),
+    getState: () => trackState,
+    runCommand: (name) => {
+      if (name === "play") { if (!isPlaying) appAction("PLAY"); }
+      else if (name === "pause") { if (isPlaying) appAction("PAUSE"); }
+      else playerCmd(name);
+    },
+  });
+  const configureLocalApi = () => {
+    const cfg = config();
+    if (cfg.localApi && !cfg.localApiToken && !cfg.__invalid) {
+      cfg.localApiToken = LocalApi.newToken();
+      try { saveConfig(cfg); } catch {}
+    }
+    localApi.configure(!!cfg.localApi, cfg.localApiPort, cfg.localApiToken);
+  };
+  const localApiInfo = () => {
+    const cfg = config();
+    const base = `http://127.0.0.1:${cfg.localApiPort}`;
+    return { enabled: !!cfg.localApi, status: localApi.status, error: localApi.error, port: cfg.localApiPort, token: cfg.localApiToken, widget: base + "/widget", api: base + "/api/now" };
+  };
+  ipcMain.handle("ymmods:local-api", async (event, action) => {
+    if (!own(event)) return null;
+    if (action === "regen") {
+      const cfg = config();
+      cfg.localApiToken = LocalApi.newToken();
+      saveConfig(cfg);
+      configureLocalApi();
+    }
+    // the server starts asynchronously: give it a moment before reporting
+    await new Promise((r) => setTimeout(r, 150));
+    return localApiInfo();
+  });
+  app.on("will-quit", () => localApi.stop());
+
   // ── Mod updates from GitHub releases ────────────────────────────────────
   const modUpdater = new ModUpdater({ modHome: MOD_HOME, log });
   const UPDATE_TEXT = {
@@ -1112,6 +1232,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     setupSession(session.defaultSession);
     configureDiscord();
     configureLastFm();
+    configureLocalApi();
     // first check a little after the start, then every 6 hours
     setTimeout(checkModUpdates, 20000);
     setInterval(checkModUpdates, 6 * 3600000);
