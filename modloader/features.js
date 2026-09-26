@@ -316,7 +316,7 @@
       const s = sonata();
       const meta = s && s.entityMeta;
       if (meta && meta.title === st.title) {
-        const a = accentFor(meta.averageColor);
+        const a = accentFor(trackColor(st.cover, meta));
         st.accent = a ? a.base : "";
         st.trackId = String(meta.id || "");
         st.albumId = meta.albumId ? String(meta.albumId) : (meta.albums && meta.albums[0] ? String(meta.albums[0].id) : "");
@@ -683,6 +683,56 @@
     while (l < 0.86 && luminance(c.h, sat, l) < 0.42) l += 0.02;
     return { base: hsl(c.h, sat, l), hover: hsl(c.h, sat, l - 0.1), pressed: hsl(c.h, sat, Math.min(0.85, l + 0.12)), focus: hsl(c.h, sat, l, 0.5) };
   };
+  // The app's averageColor is the mean of all pixels: most covers average out to grey. Instead the cover itself
+  // is read (50×50) and the most prominent vivid hue wins, weighted by saturation and brightness.
+  // Cached per URL: undefined = still loading, null = no vivid colour on the cover (or unreadable)
+  const coverColors = new Map();
+  const vividColor = (img) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 50;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, 50, 50);
+    const px = ctx.getImageData(0, 0, 50, 50).data;
+    const bins = Array.from({ length: 24 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+    let count = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i], g = px[i + 1], b = px[i + 2];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const v = max / 255, sat = max ? (max - min) / max : 0;
+      if (sat < 0.3 || v < 0.25) continue;
+      const d = max - min;
+      let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      const w = sat * sat * v;
+      const bin = bins[Math.floor(h * 4) % 24];
+      bin.w += w; bin.r += r * w; bin.g += g * w; bin.b += b * w;
+      count++;
+    }
+    // neighbouring bins count too, so a hue split across a bin edge still wins
+    let best = -1, bestW = 0;
+    bins.forEach((bin, i) => { const w = bin.w + (bins[(i + 23) % 24].w + bins[(i + 1) % 24].w) / 2; if (w > bestW) { bestW = w; best = i; } });
+    if (best < 0 || count < 2500 * 0.02) return null; // under ~2% vivid pixels: a grey / black-and-white cover
+    const bin = bins[best];
+    const hex = (n) => Math.round(n / bin.w).toString(16).padStart(2, "0");
+    return "#" + hex(bin.r) + hex(bin.g) + hex(bin.b);
+  };
+  const coverColor = (url) => {
+    if (!url) return null;
+    if (coverColors.has(url)) return coverColors.get(url);
+    coverColors.set(url, undefined);
+    if (coverColors.size > 50) coverColors.delete(coverColors.keys().next().value);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => { let c = null; try { c = vividColor(img); } catch {} coverColors.set(url, c); };
+    img.onerror = () => coverColors.set(url, null);
+    img.src = url.replace(/\/\d+x\d+$/, "/50x50");
+    return undefined;
+  };
+  // colour source for the accent: the cover's vivid hue, else the app's average colour; undefined while loading
+  const trackColor = (coverUrl, meta) => {
+    const c = coverColor(coverUrl);
+    if (c === undefined) return undefined;
+    return c || (meta && meta.averageColor);
+  };
   const accentStyle = document.createElement("style");
   accentStyle.id = "ymmods-accent";
   let accentKey = "";
@@ -787,7 +837,11 @@
     checkMenus();
     updateRepeatButton();
     updateMiniButton();
-    try { const meta = sonata() && sonata().entityMeta; updateAccent(meta && meta.averageColor); } catch {}
+    try {
+      const meta = sonata() && sonata().entityMeta;
+      const color = trackColor(meta && meta.title === s.title ? s.cover : "", meta);
+      if (color !== undefined) updateAccent(color);
+    } catch {}
     updateModVersion();
     if (s.volume !== null && lastVolume !== null && Math.abs(s.volume - lastVolume) > 0.001) showVolume(s.volume);
     lastVolume = s.volume;
