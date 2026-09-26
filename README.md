@@ -1,7 +1,11 @@
-<img src="docs/header.png" alt="ymusic_mod — моды для Яндекс Музыки" width="100%"/>
+<p align="center"><img src="docs/logo.png" alt="" width="128"/></p>
 
-[![Release](https://img.shields.io/github/v/release/nersuga/ymusic_mod)](https://github.com/nersuga/ymusic_mod/releases/latest)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+<h1 align="center">ymusic_mod</h1>
+
+<p align="center">
+  <a href="https://github.com/nersuga/ymusic_mod/releases/latest"><img src="https://img.shields.io/github/v/release/nersuga/ymusic_mod" alt="Release"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"/></a>
+</p>
 
 Неофициальные моды для десктопной Яндекс Музыки на Windows 10 и 11: мини-плеер, глобальные горячие клавиши, темы, интеграции с Discord и Last.fm и ещё несколько десятков мелочей. Мод ставится без прав администратора и сам восстанавливается после обновлений приложения.
 
