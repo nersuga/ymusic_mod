@@ -66,10 +66,10 @@
   };
 
   const TEXT = {
-    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено" },
-    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found" },
-    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады" },
-    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi" },
+    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено", repeatBtn: "Повтор трека", download: "Скачать", downloaded: "Скачано", downloading: "Скачиваю трек…", mini: "Мини-плеер" },
+    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found", repeatBtn: "Repeat track", download: "Download", downloaded: "Downloaded", downloading: "Downloading the track…", mini: "Mini player" },
+    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш" },
+    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer" },
   };
   const lang = () => { let l = ""; try { l = JSON.parse(localStorage.getItem("funtech-lang") || "{}").value || ""; } catch {} return (l || document.documentElement.lang || "ru").slice(0, 2); };
   const text = () => TEXT[lang()] || TEXT.en;
@@ -129,6 +129,14 @@
       letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .ymmods-quality[data-lossless] { border-color: var(--ym-controls-color-primary-default-enabled, #ff0); color: var(--ym-controls-color-primary-default-enabled, #ff0); }
     html[data-ym-no-quality] .ymmods-quality { display: none; }
+    /* on the My Vibe page the badge sits above the app version, in the same pill style */
+    [class*="MainPage_betaSlot"]:has(.ymmods-quality) { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .ymmods-quality.ymmods-in-slot { margin: 0; padding: 4px 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.5); font: 500 13px/18px "YS Text", sans-serif; letter-spacing: 0; }
+    .ymmods-quality.ymmods-in-slot[data-lossless] { color: var(--ym-controls-color-primary-default-enabled, #ff0); }
+    /* repeat moved out of the My Vibe "…" menu into the player bar */
+    [data-test-id="VIBE_CONTEXT_MENU_REPEAT_ITEM"] { display: none !important; }
+    [data-ymmods="repeat"][aria-pressed="true"] { color: var(--ym-controls-color-primary-default-enabled, #ff0) !important; }
     /* search field in the "Add to playlist" menu */
     .ymmods-plsearch { display: flex; align-items: center; gap: 8px; margin: 4px 8px 6px; padding: 0 12px; height: 36px; border-radius: 10px;
       background: rgba(255,255,255,.08); border: 1px solid transparent; transition: border-color .15s; }
@@ -307,9 +315,127 @@
     badge.textContent = lossless || !s.bitrate ? codec : `${codec} ${s.bitrate}`;
     badge.toggleAttribute("data-lossless", lossless);
     badge.title = [s.codec, s.bitrate ? s.bitrate + " kbps" : "", QUALITY_NAMES[s.quality] || s.quality].filter(Boolean).join(" · ");
-    // bottom player bar: left of the sound settings button; My Vibe bar: left of its "…" menu
-    const anchor = $("SOUND_QUALITY_BUTTON") || $("VIBE_CONTEXT_MENU_BUTTON");
+    // My Vibe page: above the app version (bottom right); elsewhere: left of the sound settings button
+    const version = $("RELEASE_NOTES_BUTTON");
+    const anchor = version || $("SOUND_QUALITY_BUTTON");
+    badge.classList.toggle("ymmods-in-slot", !!version);
     if (anchor && badge.nextElementSibling !== anchor) anchor.before(badge);
+  };
+
+  // ── My Vibe player bar: repeat button (the "…" menu item is hidden), a copy of the like button ──
+  const iconHref = (id) => "/icons/sprite.svg#" + id;
+  const setIcon = (btn, id) => { const use = btn.querySelector("use"); if (use && use.getAttribute("xlink:href") !== iconHref(id)) use.setAttribute("xlink:href", iconHref(id)); };
+  const updateRepeatButton = () => {
+    const bar = $("VIBE_PLAYERBAR");
+    const more = bar && $("VIBE_CONTEXT_MENU_BUTTON", bar);
+    const like = bar && $("LIKE_BUTTON", bar);
+    const s = sonata();
+    let btn = bar && bar.querySelector('[data-ymmods="repeat"]');
+    if (!more || !like || !s || !s.canChangeRepeatMode) { if (btn) btn.remove(); return; }
+    if (!btn) {
+      btn = like.cloneNode(true);
+      for (const a of ["data-test-id", "aria-live", "aria-busy"]) btn.removeAttribute(a);
+      btn.setAttribute("data-ymmods", "repeat");
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const pb = playback(), st = sonata();
+        if (!pb || !st) return;
+        pb.setRepeatMode(st.repeatMode === "none" ? "one" : "none");
+        setTimeout(updateRepeatButton, 50);
+      });
+    }
+    // a direct child of the buttons row (like the like button), so the row's gap applies on both sides:
+    // the "…" button sits in its own wrapper
+    const slot = more.parentElement && more.parentElement !== like.parentElement && more.parentElement.parentElement === like.parentElement ? more.parentElement : more;
+    if (btn.nextElementSibling !== slot) slot.before(btn);
+    // same look as the like button (its classes change with its state: keep them in sync)
+    if (btn.className !== like.className) btn.className = like.className;
+    // the like button may be disabled while a track loads: the copy is never disabled
+    if (btn.disabled) btn.disabled = false;
+    btn.removeAttribute("data-disabled");
+    const on = s.repeatMode !== "none";
+    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-label", text().repeatBtn);
+    btn.title = text().repeatBtn;
+    setIcon(btn, s.repeatMode === "one" ? "repeat_one_xs" : "repeat_xs");
+  };
+
+  // ── Extra items in the My Vibe "…" menu: download the current track (the app's own offline download)
+  //    and the mini player ──
+  let container = null; // the app's dependency container (React context), for its offline downloads service
+  const slam = () => {
+    if (!container) {
+      const start = document.querySelector('[data-test-id="VIBE_PLAYERBAR"], section[class*="PlayerBarDesktop"]');
+      const key = start && Object.keys(start).find((k) => k.startsWith("__reactFiber"));
+      for (let f = key && start[key], i = 0; f && i < 400; f = f.return, i++) {
+        const v = f.memoizedProps && f.memoizedProps.value;
+        if (v && typeof v.get === "function" && "bindings" in v) { container = v; break; }
+      }
+    }
+    try { return container ? container.get("Slam") : null; } catch { return null; }
+  };
+  const currentEntityId = () => {
+    const meta = sonata() && sonata().entityMeta;
+    if (!meta) return null;
+    const album = meta.albums && meta.albums[0] ? meta.albums[0].id : meta.albumId;
+    return album ? `${meta.id}:${album}` : String(meta.id);
+  };
+  const closeMenus = () => document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+  const menuItem = (template, id, icon, label, onClick) => {
+    const item = template.cloneNode(true);
+    item.removeAttribute("data-test-id");
+    item.setAttribute("data-ymmods", id);
+    item.disabled = false;
+    item.removeAttribute("data-disabled");
+    item.classList.remove(...[...item.classList].filter((c) => /active/i.test(c)));
+    const span = item.querySelector("span");
+    const svg = span && span.querySelector("svg");
+    if (span) { span.textContent = ""; if (svg) span.appendChild(svg); span.appendChild(document.createTextNode(label)); }
+    setIcon(item, icon);
+    item.addEventListener("click", (e) => { e.stopPropagation(); onClick(item); });
+    return item;
+  };
+  const addVibeMenuItems = (menu) => {
+    if (menu.querySelector('[data-ymmods="download"]')) return;
+    const template = $("VIBE_CONTEXT_MENU_PLAY_QUEUE_ITEM", menu) || $("VIBE_CONTEXT_MENU_SYNC_LYRICS_ITEM", menu);
+    if (!template) return;
+    const t = text();
+    const mini = menuItem(template, "mini", "picture_xs", t.mini, () => { closeMenus(); window.ymMods && window.ymMods.toggleMiniPlayer(); });
+    const download = menuItem(template, "download", "download_xxs", t.download, async () => {
+      const service = slam(), id = currentEntityId();
+      closeMenus();
+      if (!service || !service.tracksController || !id) return;
+      service.tracksController.download(id);
+      notify(t.downloading);
+    });
+    template.after(download);
+    download.after(mini);
+    // already on the device: shown as done, like the app does in the track menu
+    const id = currentEntityId(), service = slam();
+    Promise.resolve(service && service.tracksController && id ? service.tracksController.getTrack(id) : null).then((track) => {
+      if (!track) return;
+      setIcon(download, "downloaded_xxs");
+      download.querySelector("span").lastChild.textContent = t.downloaded;
+      download.disabled = true;
+      download.style.opacity = ".6";
+    }).catch(() => {});
+  };
+
+  // ── Bottom player bar: mini player button next to the play queue button ──
+  const updateMiniButton = () => {
+    const queue = $("PLAYERBAR_DESKTOP_PLAY_QUEUE_BUTTON");
+    if (!queue || queue.parentElement.querySelector('[data-ymmods="mini"]')) return;
+    const btn = queue.cloneNode(true);
+    for (const a of ["data-test-id", "aria-live", "aria-busy", "aria-pressed", "aria-expanded", "aria-haspopup"]) btn.removeAttribute(a);
+    btn.setAttribute("data-ymmods", "mini");
+    btn.disabled = false;
+    btn.removeAttribute("data-disabled");
+    btn.setAttribute("aria-label", text().mini);
+    btn.title = text().mini;
+    btn.classList.remove(...[...btn.classList].filter((c) => /active|selected/i.test(c)));
+    setIcon(btn, "picture_xs");
+    btn.addEventListener("click", (e) => { e.stopPropagation(); window.ymMods && window.ymMods.toggleMiniPlayer(); });
+    queue.after(btn);
   };
 
   // ── Search in the "Add to playlist" submenu ──
@@ -360,6 +486,8 @@
   const checkMenus = () => {
     const menu = document.querySelector('[class*="ContextSubMenuAddToPlaylist_menu"]');
     if (menu) addPlaylistSearch(menu);
+    const vibeMenu = $("VIBE_CONTEXT_MENU");
+    if (vibeMenu) addVibeMenuItems(vibeMenu);
   };
   let menuTimer = null;
   new MutationObserver(() => {
@@ -371,6 +499,8 @@
     const s = readState();
     updateBadge(s);
     checkMenus();
+    updateRepeatButton();
+    updateMiniButton();
     if (s.volume !== null && lastVolume !== null && Math.abs(s.volume - lastVolume) > 0.001) showVolume(s.volume);
     lastVolume = s.volume;
     if (s.cover) setCover(s.cover);
