@@ -16,7 +16,9 @@
   @font-face { font-family: "YS Text"; src: url("/fonts/text.woff2") format("woff2"); font-weight: 400; }
   @font-face { font-family: "YS Text"; src: url("/fonts/medium.woff2") format("woff2"); font-weight: 500; }
   @font-face { font-family: "YS Text"; src: url("/fonts/bold.woff2") format("woff2"); font-weight: 700; }
-  :root { --accent: #ff0; }
+  /* registered as a colour so a new track's accent fades in */
+  @property --accent { syntax: "<color>"; inherits: true; initial-value: #ff0; }
+  :root { --accent: #ff0; transition: --accent .9s ease; }
   html, body { margin: 0; background: transparent; overflow: hidden; font-family: "YS Text", "Segoe UI", system-ui, sans-serif; color: #fff; }
   .card { position: relative; display: flex; align-items: center; gap: 16px; box-sizing: border-box; width: 100%; max-width: 600px; margin: 10px;
     padding: 14px 20px 14px 14px; border-radius: 24px; overflow: hidden; background: rgba(12,12,12,.72); box-shadow: 0 8px 28px rgba(0,0,0,.35);

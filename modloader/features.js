@@ -735,9 +735,21 @@
   };
   const accentStyle = document.createElement("style");
   accentStyle.id = "ymmods-accent";
+  // The accent variables are registered as colours so the browser can transition them: every change
+  // (next track, back to the app's yellow) fades instead of jumping. The app sets them all on body as plain colours
+  const ACCENT_VARS = ["--ym-controls-color-primary-default-enabled", "--ym-controls-color-primary-default-hovered",
+    "--ym-controls-color-primary-default-pressed", "--ym-controls-color-primary-default-focused_stroke",
+    "--ym-controls-color-primary-outline-hovered_stroke", "--ym-controls-color-primary-outline-selected_stroke",
+    "--ym-controls-color-primary-outline-focused_stroke", "--ym-logo-color-primary-variant",
+    "--ym-logo-color-primary-player", "--ym-logo-color-primary-text"];
+  const accentAnim = document.createElement("style");
+  accentAnim.id = "ymmods-accent-anim";
+  accentAnim.textContent = ACCENT_VARS.map((v) => `@property ${v}{syntax:"<color>";inherits:true;initial-value:transparent}`).join("") +
+    `body.ym-dark-theme{transition:${ACCENT_VARS.map((v) => v + " .9s ease").join(",")}}`;
   let accentKey = "";
   const updateAccent = (average) => {
     const on = document.documentElement.hasAttribute("data-ym-accent-cover");
+    if (on && !accentAnim.isConnected) document.head.appendChild(accentAnim);
     const a = on ? accentFor(average) : null;
     const key = a ? a.base : "";
     if (key === accentKey) return;
