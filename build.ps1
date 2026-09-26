@@ -123,6 +123,8 @@ $installSh = [IO.File]::ReadAllText((Join-Path $Root "linux\install.sh"), $Utf8)
 [IO.File]::WriteAllText((Join-Path $linuxObj "install.sh"), $installSh, $Utf8)
 $entries = @(
   @{ src = (Join-Path $linuxObj "install.sh"); dst = "install.sh"; mode = "755" },
+  @{ src = (Join-Path $Root "linux\root-setup.sh"); dst = "root-setup.sh"; mode = "755" },
+  @{ src = (Join-Path $Root "linux\dpkg-hook.sh"); dst = "dpkg-hook.sh"; mode = "755" },
   @{ src = (Join-Path $Root "linux\ymmods-boot.js"); dst = "ymmods-boot.js" },
   @{ src = (Join-Path $Root "LICENSE"); dst = "LICENSE" }
 )

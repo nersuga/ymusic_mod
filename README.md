@@ -46,9 +46,11 @@ curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.s
 
 Скрипт скачает последний релиз, сверит SHA-256 и запустит `install.sh`. То же можно сделать вручную: скачать `YandexMusicMods-linux-x.y.z.tar.gz` из [Releases](https://github.com/nersuga/ymusic_mod/releases/latest), распаковать и выполнить `./install.sh`.
 
-Файлы приложения мод не меняет. Сам мод лежит в `~/.config/YandexMusic`, а в `/opt/Яндекс Музыка/resources/app/` кладётся маленький загрузчик — только для этого шага понадобится пароль `sudo`. Electron загружает эту папку вместо `app.asar`, а обновления пакета её не трогают, поэтому мод переживает обновления приложения без ремонта. Обновления самого мода ставятся из настроек без пароля.
+Содержимое файлов приложения мод не меняет. Сам мод лежит в `~/.config/YandexMusic`. Один раз, с паролем `sudo`, установщик кладёт маленький загрузчик в `/opt/Яндекс Музыка/resources/app/` и переименовывает `app.asar` в `app-orig.asar`: тогда Electron запускает загрузчик, а тот — мод и само приложение. Обновление пакета снова приносит `app.asar`, поэтому ставится ещё хук dpkg (`/etc/dpkg/dpkg.cfg.d/ymusic-mod`), который после любой установки пакетов убирает его в сторону. Так мод переживает обновления приложения, в том числе через встроенный апдейтер. Обновления самого мода ставятся из настроек без пароля.
 
-Удаление: `./install.sh --uninstall` (с `--remove-settings` удалятся и настройки) или `curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash -s -- --uninstall`. Если приложение стоит не в `/opt`, укажите папку: `--app-dir <папка>`.
+Удаление: `./install.sh --uninstall` (с `--remove-settings` удалятся и настройки) или `curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash -s -- --uninstall`. Удаление возвращает `app.asar` на место и убирает хук. Если приложение стоит не в `/opt`, укажите папку: `--app-dir <папка>`.
+
+Официальный пакет не зависит от `libasound2`, а в минимальных системах (например, Ubuntu в WSL) её нет, и приложение не запускается. Лечится так: `sudo apt install libasound2t64`.
 
 На Linux нет кнопок в превью на панели задач, тем Mica и Acrylic и сжатия памяти в трее — это возможности Windows. Автопауза при блокировке экрана работает через D-Bus (GNOME, KDE и другие окружения с `org.freedesktop.ScreenSaver`). Глобальные горячие клавиши в сессии Wayland работают только там, где окружение пропускает их к приложениям X11.
 
@@ -252,7 +254,7 @@ modloader/        код мода, ставится в %APPDATA%\YandexMusic\mod
   watch-update.ps1  восстановление после обновления, ремонт, удаление (Windows)
 mods/             CSS- и JS-моды по умолчанию
 installer/        Setup.exe (C#) и installer.ps1
-linux/            install.sh, get.sh и загрузчик ymmods-boot.js для Linux
+linux/            install.sh, get.sh, загрузчик ymmods-boot.js, root-setup.sh и хук dpkg для Linux
 tools/sync.ps1    синхронизация с установленным модом
 tools/mktar.js    сборка архива для Linux с правами Unix
 build.ps1         сборка установщика и архива для Linux

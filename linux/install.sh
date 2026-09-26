@@ -4,12 +4,13 @@
 #   ./install.sh                     install or update the mod (asks for the sudo password once, for the boot file)
 #   ./install.sh --uninstall         remove the mod; --remove-settings also deletes its settings
 #   ./install.sh --update            copy the mod files only (used by the in-app updater, never asks for a password)
+#   sudo ./install.sh --boot-only    only put the boot into the app folder (as root, e.g. for several users)
 #   options: --app-dir <dir>         the app folder if it is not /opt/Яндекс Музыка
 #            --yes                   do not ask anything
 #
-# The app itself is not modified. The mod lives in ~/.config/YandexMusic/{modloader,mods}; a small boot file goes to
-# <app>/resources/app/, which Electron loads instead of resources/app.asar. Package updates of the app leave that
-# folder alone, so the mod survives them.
+# The app's files are not rewritten. The mod lives in ~/.config/YandexMusic/{modloader,mods}. A small boot goes to
+# <app>/resources/app/ and the app's resources/app.asar is renamed to app-orig.asar: Electron then starts the boot,
+# which loads the mod and the app. A dpkg hook repeats the rename after package updates, so the mod survives them.
 set -euo pipefail
 
 MOD_VERSION="__MOD_VERSION__"
@@ -24,10 +25,11 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --uninstall) action=uninstall ;;
     --update) action=update ;;
+    --boot-only) action=boot ;;
     --app-dir) app_dir="${2:-}"; shift ;;
     --yes|-y) assume_yes=1 ;;
     --remove-settings) remove_settings=1 ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -40,7 +42,7 @@ fail() { printf '\033[1;31m✗\033[0m %s\n' "$(t "$1" "$2")" >&2; exit 1; }
 done_() { printf '\033[1;32m✓\033[0m %s\n' "$(t "$1" "$2")"; }
 
 # The mod belongs to the user who runs the app: its files go to that user's home, not root's
-if [ "$(id -u)" = 0 ] && [ -n "${SUDO_USER:-}" ]; then
+if [ "$action" != boot ] && [ "$(id -u)" = 0 ] && [ -n "${SUDO_USER:-}" ]; then
   fail "Запустите без sudo: пароль спросят, только когда он понадобится." \
        "Run it without sudo: the password is asked only when it is needed."
 fi
@@ -56,15 +58,15 @@ find_app() {
   bin="$(command -v yandexmusic 2>/dev/null || true)"
   [ -n "$bin" ] && candidates+=("$(dirname "$(readlink -f "$bin")")")
   for d in "${candidates[@]}"; do
-    if [ -f "$d/resources/app.asar" ]; then printf '%s' "$d"; return 0; fi
+    if [ -f "$d/resources/app.asar" ] || [ -f "$d/resources/app-orig.asar" ]; then printf '%s' "$d"; return 0; fi
   done
   return 1
 }
 
-# Runs a command as root when the target is not writable by the user
+is_root() { [ "$(id -u)" = 0 ]; }
+# Runs a command as root (sudo or pkexec asks for the password)
 as_root() {
-  if [ -w "$1" ]; then shift; "$@"; return; fi
-  shift
+  if is_root; then "$@"; return; fi
   if command -v sudo >/dev/null 2>&1; then sudo "$@"
   elif command -v pkexec >/dev/null 2>&1; then pkexec "$@"
   else fail "Нужны права администратора, но нет ни sudo, ни pkexec." "Root rights are needed, but there is neither sudo nor pkexec."
@@ -89,37 +91,55 @@ copy_payload() {
   printf '%s\n' "$MOD_VERSION" > "$mod_home/version.txt"
 }
 
-boot_installed() { [ -f "$1/resources/app/ymmods-boot.js" ] && grep -q "boot v$BOOT_VERSION" "$1/resources/app/ymmods-boot.js"; }
+# Everything root has to do is already in place: the same boot, app.asar moved aside, the same dpkg hook
+boot_installed() {
+  local r="$1/resources"
+  cmp -s "$here/ymmods-boot.js" "$r/app/ymmods-boot.js" || return 1
+  [ ! -f "$r/app.asar" ] || return 1
+  if [ -d /etc/dpkg/dpkg.cfg.d ]; then
+    [ -f /etc/dpkg/dpkg.cfg.d/ymusic-mod ] && cmp -s "$here/dpkg-hook.sh" /usr/local/lib/ymusic-mod/dpkg-hook || return 1
+    grep -qxF "$1" /usr/local/lib/ymusic-mod/apps 2>/dev/null || return 1
+  fi
+}
+password_note() { if is_root; then printf ''; else t " (нужен пароль администратора)" " (needs the admin password)"; fi; }
 
 install_boot() {
-  local app="$1" target="$1/resources/app" tmp version
+  local app="$1" target="$1/resources/app" tmp version asar
   if boot_installed "$app"; then return 0; fi
   if [ -e "$target" ] && [ ! -f "$target/ymmods-boot.js" ]; then
     fail "В $target уже что-то лежит, и это не мод. Установка остановлена." "$target exists and is not the mod. Stopping."
   fi
   tmp="$(mktemp -d)"
-  # The app binary runs as plain Node (ELECTRON_RUN_AS_NODE) and reads its own package.json from app.asar;
+  chmod 755 "$tmp"
+  asar="$app/resources/app.asar"; [ -f "$asar" ] || asar="$app/resources/app-orig.asar"
+  # The app binary runs as plain Node (ELECTRON_RUN_AS_NODE) and reads its own package.json from the archive;
   # the boot keeps the same name (the settings folder depends on it) and points "main" to itself
-  version="$(ELECTRON_RUN_AS_NODE=1 "$app/yandexmusic" -e 'try{process.stdout.write(require(process.argv[1]+"/package.json").version||"")}catch(e){}' "$app/resources/app.asar" 2>/dev/null || true)"
+  version="$(ELECTRON_RUN_AS_NODE=1 "$app/yandexmusic" -e 'try{process.stdout.write(require(process.argv[1]+"/package.json").version||"")}catch(e){}' "$asar" 2>/dev/null || true)"
   printf '{\n  "name": "YandexMusic",\n  "version": "%s",\n  "main": "ymmods-boot.js",\n  "ymmodsBoot": %s\n}\n' "${version:-0.0.0}" "$BOOT_VERSION" > "$tmp/package.json"
-  cp "$here/ymmods-boot.js" "$tmp/ymmods-boot.js"
-  step "Кладу загрузчик мода в $target (нужен пароль администратора)" "Putting the mod boot into $target (needs the admin password)"
-  as_root "$app/resources" mkdir -p "$target"
-  as_root "$app/resources" install -m 644 "$tmp/package.json" "$tmp/ymmods-boot.js" "$target/"
+  cp "$here/ymmods-boot.js" "$here/dpkg-hook.sh" "$tmp/"
+  chmod 644 "$tmp"/*
+  step "Подключаю мод к приложению в $app$(password_note)" "Hooking the mod into the app in $app$(password_note)"
+  as_root bash "$here/root-setup.sh" install "$app" "$tmp"
   rm -rf "$tmp"
 }
 
 remove_boot() {
-  local target="$1/resources/app"
-  [ -f "$target/ymmods-boot.js" ] || return 0
-  step "Убираю загрузчик мода из $target (нужен пароль администратора)" "Removing the mod boot from $target (needs the admin password)"
-  as_root "$1/resources" rm -rf "$target"
+  local r="$1/resources"
+  [ -f "$r/app/ymmods-boot.js" ] || [ -f "$r/app-orig.asar" ] || [ -f /etc/dpkg/dpkg.cfg.d/ymusic-mod ] || return 0
+  step "Отключаю мод от приложения$(password_note)" "Unhooking the mod from the app$(password_note)"
+  as_root bash "$here/root-setup.sh" remove "$1"
 }
 
 case "$action" in
   update)
     copy_payload
     exit 0
+    ;;
+
+  boot)
+    app="$(find_app)" || fail "Не нашёл Яндекс Музыку, укажите папку: --app-dir <папка>" "Yandex Music is not found, pass its folder: --app-dir <dir>"
+    install_boot "$app"
+    done_ "Мод подключён к приложению в $app" "The mod is hooked into the app in $app"
     ;;
 
   install)
