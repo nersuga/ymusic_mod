@@ -139,3 +139,22 @@ if ($LASTEXITCODE) { throw "mktar failed" }
 $tgzHash = (Get-FileHash $tgz -Algorithm SHA256).Hash
 Set-Content -Path "$tgz.sha256" -Value "$($tgzHash.ToLower())  $(Split-Path $tgz -Leaf)" -Encoding ASCII
 Write-Host ("built {0} ({1:N0} KB) sha256 {2}" -f $tgz, ((Get-Item $tgz).Length / 1KB), $tgzHash)
+
+# 7. macOS package (experimental): install.sh patches app.asar like on Windows, so patcher.js goes along
+$macObj = Join-Path $Obj "macos"
+New-Item -ItemType Directory -Force $macObj | Out-Null
+$macSh = [IO.File]::ReadAllText((Join-Path $Root "macos\install.sh"), $Utf8).Replace("__MOD_VERSION__", $Version)
+[IO.File]::WriteAllText((Join-Path $macObj "install.sh"), $macSh, $Utf8)
+$macEntries = @(
+  @{ src = (Join-Path $macObj "install.sh"); dst = "install.sh"; mode = "755" },
+  @{ src = (Join-Path $Root "LICENSE"); dst = "LICENSE" }
+)
+foreach ($f in $ModloaderFiles | Where-Object { @("watch-update.ps1", "repair.cmd") -notcontains $_ }) { $macEntries += @{ src = (Join-Path $Root "modloader\$f"); dst = "modloader/$f" } }
+foreach ($f in $ModFiles) { $macEntries += @{ src = (Join-Path $Root "mods\$f"); dst = "mods/$f" } }
+[IO.File]::WriteAllText((Join-Path $macObj "list.json"), (ConvertTo-Json @($macEntries) -Depth 3), $Utf8)
+$macTgz = Join-Path $Dist "YandexMusicMods-macos-$Version.tar.gz"
+& node (Join-Path $Root "tools\mktar.js") $macTgz "YandexMusicMods-macos" (Join-Path $macObj "list.json")
+if ($LASTEXITCODE) { throw "mktar failed (macos)" }
+$macHash = (Get-FileHash $macTgz -Algorithm SHA256).Hash
+Set-Content -Path "$macTgz.sha256" -Value "$($macHash.ToLower())  $(Split-Path $macTgz -Leaf)" -Encoding ASCII
+Write-Host ("built {0} ({1:N0} KB) sha256 {2}" -f $macTgz, ((Get-Item $macTgz).Length / 1KB), $macHash)

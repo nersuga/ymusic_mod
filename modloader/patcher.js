@@ -6,6 +6,8 @@
 //   - optional wheel patches in the renderer chunk (skipped as a whole if the code changed)
 // It does not touch the installed files: watch-update.ps1 swaps the asar and writes the new integrity
 // hash into the exe (at result.offset) once the exe is no longer running.
+// macOS (--app-dir "/Applications/Яндекс Музыка.app"): the asar is Contents/Resources/app.asar and the hash lives in
+// Contents/Info.plist (ElectronAsarIntegrity), reported as result.plist + result.newHash for mac/install.sh.
 process.noAsar = true;
 const fs = require("fs");
 const path = require("path");
@@ -113,7 +115,7 @@ const bootSource = () => `"use strict";
 // Yandex Music mod bootstrap (patcher v${PATCHER_VERSION}): loads the external mod, then the app itself.
 // If the mod folder is gone the app starts unmodified.
 try {
-  const main = require("path").join(process.env.APPDATA || "", "YandexMusic", "modloader", "main.js");
+  const main = require("path").join(process.env.APPDATA || require("electron").app.getPath("appData"), "YandexMusic", "modloader", "main.js");
   if (require("fs").existsSync(main)) require(main)({ appRequire: require, appDir: __dirname });
 } catch (e) {
   console.error("[ymmods] boot failed", e);
@@ -123,8 +125,10 @@ require("./index.js");
 
 try {
   if (!APP_DIR) throw new Error("--app-dir is required");
-  const asarPath = path.join(APP_DIR, "resources", "app.asar");
-  const exePath = fs.readdirSync(APP_DIR).filter((f) => /\.exe$/i.test(f) && !/^uninstall|elevate/i.test(f))
+  const plistPath = path.join(APP_DIR, "Contents", "Info.plist");
+  const isMacApp = fs.existsSync(plistPath);
+  const asarPath = isMacApp ? path.join(APP_DIR, "Contents", "Resources", "app.asar") : path.join(APP_DIR, "resources", "app.asar");
+  const exePath = isMacApp ? null : fs.readdirSync(APP_DIR).filter((f) => /\.exe$/i.test(f) && !/^uninstall|elevate/i.test(f))
     .map((f) => path.join(APP_DIR, f)).sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)[0];
 
   const installed = readAsar(asarPath);
@@ -133,6 +137,12 @@ try {
   result.oldHash = sha256(installed.headerString);
   const alreadyPatched = installedPkg.main === BOOT_NAME;
   const exeOffset = (newHash) => {
+    if (isMacApp) {
+      // macOS keeps the expected hash in Info.plist; mac/install.sh writes it (and re-signs the app)
+      result.newHash = newHash;
+      result.plist = plistPath;
+      return;
+    }
     // Where the exe keeps the expected hash (asar integrity). -1: integrity not embedded, nothing to write
     const exe = fs.readFileSync(exePath);
     result.offset = exe.indexOf(Buffer.from(result.oldHash, "ascii"));

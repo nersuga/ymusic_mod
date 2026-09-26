@@ -1,6 +1,6 @@
 "use strict";
 // Mod updates from GitHub releases (github.com/nersuga/ymusic_mod): the latest release carries
-// YandexMusicMods-Setup-<version>.exe (Windows) and YandexMusicMods-linux-<version>.tar.gz (Linux), each with a .sha256.
+// YandexMusicMods-Setup-<version>.exe (Windows) and YandexMusicMods-{linux,macos}-<version>.tar.gz, each with a .sha256.
 // The package for this system is downloaded and its hash checked against the .sha256 of the same release; main.js
 // then runs it (Windows: the silent installer closes the app, installs and restarts it; Linux: its install.sh).
 const fs = require("fs");
@@ -10,7 +10,7 @@ const crypto = require("crypto");
 
 const REPO = "nersuga/ymusic_mod";
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;
-const PACKAGE = process.platform === "win32" ? /^YandexMusicMods-Setup-.*\.exe$/i : /^YandexMusicMods-linux-.*\.tar\.gz$/i;
+const PACKAGE = { win32: /^YandexMusicMods-Setup-.*\.exe$/i, darwin: /^YandexMusicMods-macos-.*\.tar\.gz$/i }[process.platform] || /^YandexMusicMods-linux-.*\.tar\.gz$/i;
 
 const parse = (v) => String(v || "").replace(/^v/i, "").split(/[.+-]/).slice(0, 3).map((n) => parseInt(n, 10) || 0);
 const newer = (a, b) => {

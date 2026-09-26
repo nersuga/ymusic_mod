@@ -1215,21 +1215,22 @@ module.exports = ({ appRequire, appDir } = {}) => {
     const t = UPDATED_TEXT[(trackState.lang || "").slice(0, 2)] || UPDATED_TEXT.ru;
     setTimeout(() => wc.executeJavaScript(`window.__ymModsToast && window.__ymModsToast(${JSON.stringify(t(version))}, 5000)`).catch(() => {}), 4000);
   };
-  // Linux: the release archive is unpacked and its install.sh --update copies the mod files (they live in the user's
-  // config folder, no root needed); the running app keeps the old code until it restarts
-  const installLinuxUpdate = (file) => {
+  // Linux and macOS: the release archive is unpacked and its install.sh --update copies the mod files (they live in
+  // the user's folder, no root needed); the running app keeps the old code until it restarts
+  const installUnixUpdate = (file) => {
     const dir = path.join(os.tmpdir(), "ymmods-update", "unpacked");
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
     childProcess.execFileSync("tar", ["-xzf", file, "-C", dir], { timeout: 60000 });
-    const r = childProcess.spawnSync("bash", [path.join(dir, "YandexMusicMods-linux", "install.sh"), "--update"], { timeout: 60000, encoding: "utf8" });
+    const pkgDir = IS_LINUX ? "YandexMusicMods-linux" : "YandexMusicMods-macos";
+    const r = childProcess.spawnSync("bash", [path.join(dir, pkgDir, "install.sh"), "--update"], { timeout: 60000, encoding: "utf8" });
     log.info("mod update install.sh exit", r.status, String(r.stdout || "").trim(), String(r.stderr || "").trim());
     return r.status === 0;
   };
   const runInstaller = (file, relaunch) => {
     if (!IS_WIN) {
       let ok = false;
-      try { ok = installLinuxUpdate(file); } catch (e) { log.error("mod update install", e); }
+      try { ok = installUnixUpdate(file); } catch (e) { log.error("mod update install", e); }
       if (ok && relaunch) setTimeout(() => { app.relaunch(); app.exit(0); }, 500);
       return ok;
     }

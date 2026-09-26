@@ -7,7 +7,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"/></a>
 </p>
 
-Неофициальные моды для десктопной Яндекс Музыки на Windows 10, 11 и Linux: мини-плеер, глобальные горячие клавиши, темы, интеграции с Discord и Last.fm и ещё несколько десятков мелочей. Мод переживает обновления приложения.
+Неофициальные моды для десктопной Яндекс Музыки на Windows 10, 11, Linux и (экспериментально) macOS: мини-плеер, глобальные горячие клавиши, темы, интеграции с Discord и Last.fm и ещё несколько десятков мелочей. Мод переживает обновления приложения.
 
 <p align="center"><img src="docs/installer.png" alt="Установщик" width="440"/></p>
 
@@ -49,6 +49,23 @@ curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.s
 Содержимое файлов приложения мод не меняет. Сам мод лежит в `~/.config/YandexMusic`. Один раз, с паролем `sudo`, установщик кладёт маленький загрузчик в `/opt/Яндекс Музыка/resources/app/` и переименовывает `app.asar` в `app-orig.asar`: тогда Electron запускает загрузчик, а тот — мод и само приложение. Обновление пакета снова приносит `app.asar`, поэтому ставится ещё хук dpkg (`/etc/dpkg/dpkg.cfg.d/ymusic-mod`), который после любой установки пакетов убирает его в сторону. Так мод переживает обновления приложения, в том числе через встроенный апдейтер. Обновления самого мода ставятся из настроек без пароля.
 
 Удаление: `./install.sh --uninstall` (с `--remove-settings` удалятся и настройки) или `curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash -s -- --uninstall`. Удаление возвращает `app.asar` на место и убирает хук. Если приложение стоит не в `/opt`, укажите папку: `--app-dir <папка>`.
+
+## Установка на macOS (экспериментально)
+
+> [!WARNING]
+> Версия для macOS не проверялась на настоящем Mac — только в симуляции на файлах приложения. Если что-то не так, напишите в [Issues](https://github.com/nersuga/ymusic_mod/issues).
+
+Нужна [Яндекс Музыка для macOS](https://music.yandex.ru/download/) в `/Applications`. Сначала дайте Терминалу доступ к приложениям: **Системные настройки → Конфиденциальность и безопасность → Управление приложениями** — включите Терминал и перезапустите его. Потом:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash
+```
+
+Скрипт сам поймёт, что это macOS, и возьмёт `YandexMusicMods-macos-x.y.z.tar.gz`. Мод лежит в `~/Library/Application Support/YandexMusic`.
+
+Как на Windows, установщик добавляет в `app.asar` точку входа мода и пишет новый хэш архива в `Info.plist`. После этого подпись Яндекса перестаёт сходиться, поэтому приложение переподписывается локально (`codesign --sign -`, права приложения сохраняются). Обновление Яндекс Музыки заменяет приложение целиком — после него запустите установщик снова. Удаление: `bash -s -- --uninstall` вместо `bash` в команде выше; чтобы вернуть и оригинальную подпись, переустановите приложение с сайта.
+
+## Особенности Linux
 
 Официальный пакет не зависит от `libasound2`, а в минимальных системах (например, Ubuntu в WSL) её нет, и приложение не запускается. Лечится так: `sudo apt install libasound2t64`.
 
@@ -255,6 +272,7 @@ modloader/        код мода, ставится в %APPDATA%\YandexMusic\mod
 mods/             CSS- и JS-моды по умолчанию
 installer/        Setup.exe (C#) и installer.ps1
 linux/            install.sh, get.sh, загрузчик ymmods-boot.js, root-setup.sh и хук dpkg для Linux
+macos/            install.sh для macOS (патчер + Info.plist + локальная подпись)
 tools/sync.ps1    синхронизация с установленным модом
 tools/mktar.js    сборка архива для Linux с правами Unix
 build.ps1         сборка установщика и архива для Linux
