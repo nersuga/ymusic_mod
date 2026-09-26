@@ -342,7 +342,10 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (cfg.hideConcerts) css += '[data-test-id="NAVBAR_NAVIGATION_ITEM_CONCERTS"]{display:none!important}';
     if (cfg.hideNonMusic) css += '[data-test-id="NAVBAR_NAVIGATION_ITEM_NON_MUSIC"]{display:none!important}';
     if (cfg.hidePlusPromo) css += '[data-test-id="USER_PROFILE_PLUS_BADGE"],[data-test-id="USER_PROFILE_PLUS_LINK"],[class*="WithTopBanner_banner"],[class*="PlusOffer"],[class*="plusOffer"]{display:none!important}';
-    if (THEME_CSS[cfg.theme]) css += THEME_CSS[cfg.theme];
+    // Mica / Acrylic only exist on Windows 11: elsewhere (Linux, macOS, Windows 10, settings imported from another
+    // computer) their transparent page would sit on an opaque window, so the default look is used instead
+    const theme = (cfg.theme === "mica" || cfg.theme === "acrylic") && !materialSupported() ? "default" : cfg.theme;
+    if (THEME_CSS[theme]) css += THEME_CSS[theme];
     wc.executeJavaScript(`document.documentElement.toggleAttribute("data-ym-no-volume-percent", ${!cfg.showVolumePercent});` +
       `document.documentElement.toggleAttribute("data-ym-no-quality", ${!cfg.showQuality});` +
       `document.documentElement.toggleAttribute("data-ym-accent-cover", ${!!cfg.accentFromCover});` +

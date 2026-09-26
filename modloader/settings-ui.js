@@ -801,7 +801,10 @@
 
     // ── Appearance ──
     ul.appendChild(makeHeader(t.groupLook, 24));
-    const themeChips = makeChips(Object.entries(t.themes).filter(([k]) => state.materials || (k !== "mica" && k !== "acrylic")), cfg.theme || "default", (value) => window.ymMods.setConfig({ theme: value }));
+    // without Windows 11 materials a saved Mica / Acrylic theme works as the default one (main.js does the same)
+    const isMaterial = (k) => k === "mica" || k === "acrylic";
+    const shownTheme = !state.materials && isMaterial(cfg.theme) ? "default" : cfg.theme || "default";
+    const themeChips = makeChips(Object.entries(t.themes).filter(([k]) => state.materials || !isMaterial(k)), shownTheme, (value) => window.ymMods.setConfig({ theme: value }));
     ul.appendChild(makeRow(t.theme[0], state.materials ? t.theme[1] + ". " + t.materialNote : t.theme[1], themeChips).li);
     addToggles(["accentFromCover"]);
     const zoomValues = [0.9, 1, 1.1, 1.25, 1.5];
