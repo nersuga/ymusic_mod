@@ -4,7 +4,7 @@
 // Downloaded tracks live in the page's private file system ("File System" in the session data folder).
 // Chromium refuses to write there through a junction, so the whole session data folder is moved instead:
 // Electron's app.setPath("sessionData") points the browser profile to the new place before any window opens.
-// The app's own files (config.json, logs, the mod) stay in %APPDATA%\YandexMusic.
+// The app's own files (config.json, logs, the mod) stay in %APPDATA%\YandexMusic (Linux: ~/.config/YandexMusic).
 const fs = require("fs");
 const path = require("path");
 
@@ -44,7 +44,9 @@ function countSync(p) {
   return { bytes, files };
 }
 
-const same = (a, b) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+// Windows paths are case-insensitive, Linux ones are not
+const key = (p) => (process.platform === "win32" ? path.resolve(p).toLowerCase() : path.resolve(p));
+const same = (a, b) => key(a) === key(b);
 
 const info = async (sessionDir, isCustom) => {
   const d = await dirStats(path.join(sessionDir, DOWNLOADS));

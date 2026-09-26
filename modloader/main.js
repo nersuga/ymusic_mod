@@ -13,9 +13,12 @@ const { LastFm } = require("./lastfm");
 const storage = require("./storage");
 const { ModUpdater } = require("./updater");
 const { LocalApi } = require("./localapi");
+const { isWheelChunk, patchWheelChunk } = require("./wheelpatch");
 
 const { app, ipcMain, session, shell, webFrameMain, Tray, MenuItem, BrowserWindow, dialog, globalShortcut, screen, powerMonitor } = electron;
 const MOD_HOME = __dirname;
+const IS_WIN = process.platform === "win32";
+const IS_LINUX = process.platform === "linux";
 const APP_URL_PREFIX = "music-application://";
 
 module.exports = ({ appRequire, appDir } = {}) => {
@@ -130,7 +133,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
       const from = cfg.sessionDataDir && fs.existsSync(cfg.sessionDataDir) ? cfg.sessionDataDir : userData;
       const to = cfg.downloadsMove.target ? path.resolve(cfg.downloadsMove.target) : userData;
       const result = storage.moveSessionData(from, to, userData, log);
-      if (result.ok) cfg.sessionDataDir = path.resolve(to).toLowerCase() === path.resolve(userData).toLowerCase() ? "" : to;
+      const key = (p) => (IS_WIN ? path.resolve(p).toLowerCase() : path.resolve(p));
+      if (result.ok) cfg.sessionDataDir = key(to) === key(userData) ? "" : to;
       cfg.downloadsMove = null;
       cfg.downloadsMoveResult = { ...result, at: Date.now() };
       saveConfig(cfg);
@@ -175,6 +179,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
       }
       return originalCheck(...args);
     };
+    // Linux: the boot lives in resources/app, which the package update leaves alone: nothing to re-patch
+    if (!IS_WIN) return;
     // The watcher relaunches the app after re-patching; the installer must not start it unpatched
     try { Object.defineProperty(updater, "autoRunAppAfterInstall", { get: () => false, set: () => {}, configurable: true }); } catch {}
     let downloaded = false;
@@ -425,7 +431,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     try { files = fs.readdirSync(modsDir).filter(isModFile).sort((a, b) => a.replace(/^_/, "").localeCompare(b.replace(/^_/, ""))); } catch {}
     const cfg = config();
     for (const key of ["lastfmSession", "lastfmApiSecret"]) if (cfg[key]) cfg[key] = "•"; // the page only needs to know they are set
-    return { config: cfg, mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo(), discord: discord.status, materials: materialSupported() };
+    return { config: cfg, mods: files.map((name) => ({ name, enabled: !name.startsWith("_") })), hotkeyStatus, sleep: sleepInfo(), discord: discord.status, materials: materialSupported(),
+      platform: process.platform, modsDir };
   });
   const applyConfigPatch = (cfg, patch) => {
     for (const [key, value] of Object.entries(patch)) {
@@ -1101,18 +1108,46 @@ module.exports = ({ appRequire, appDir } = {}) => {
 
   // ── Auto pause: computer locked (main process); headphones unplugged (page, see features.js) ──
   let pausedByLock = false;
+  const onLock = () => {
+    if (!config().autoPauseLock || !isPlaying) return;
+    pausedByLock = true;
+    appAction("PAUSE");
+    log.info("paused: screen locked");
+  };
+  const onUnlock = () => {
+    if (!pausedByLock) return;
+    pausedByLock = false;
+    if (config().autoResumeUnlock && !isPlaying) { appAction("PLAY"); log.info("resumed: screen unlocked"); }
+  };
+  // Electron reports lock/unlock only on Windows and macOS. On Linux the desktop's screen saver announces it on the
+  // session bus (KDE and most others: org.freedesktop.ScreenSaver, GNOME: org.gnome.ScreenSaver): read with dbus-monitor
+  let lockMonitor = null;
+  const watchLinuxLock = () => {
+    if (lockMonitor) return;
+    try {
+      lockMonitor = childProcess.spawn("dbus-monitor", ["--session",
+        "type='signal',interface='org.freedesktop.ScreenSaver',member='ActiveChanged'",
+        "type='signal',interface='org.gnome.ScreenSaver',member='ActiveChanged'"], { stdio: ["ignore", "pipe", "ignore"] });
+    } catch (e) { return log.error("dbus-monitor", e); }
+    lockMonitor.on("error", (e) => { log.error("dbus-monitor (screen lock pause is unavailable)", e.message); lockMonitor = null; });
+    let pending = false, rest = "";
+    lockMonitor.stdout.on("data", (chunk) => {
+      const lines = (rest + chunk).split("\n");
+      rest = lines.pop();
+      for (const line of lines) {
+        if (line.includes("member=ActiveChanged")) pending = true;
+        else if (pending) {
+          const m = /boolean (true|false)/.exec(line);
+          if (m) { pending = false; if (m[1] === "true") onLock(); else onUnlock(); }
+        }
+      }
+    });
+    app.on("will-quit", () => { try { lockMonitor && lockMonitor.kill(); } catch {} });
+  };
   app.on("ready", () => {
-    powerMonitor.on("lock-screen", () => {
-      if (!config().autoPauseLock || !isPlaying) return;
-      pausedByLock = true;
-      appAction("PAUSE");
-      log.info("paused: screen locked");
-    });
-    powerMonitor.on("unlock-screen", () => {
-      if (!pausedByLock) return;
-      pausedByLock = false;
-      if (config().autoResumeUnlock && !isPlaying) { appAction("PLAY"); log.info("resumed: screen unlocked"); }
-    });
+    powerMonitor.on("lock-screen", onLock);
+    powerMonitor.on("unlock-screen", onUnlock);
+    if (IS_LINUX) watchLinuxLock();
   });
 
   // ── Local API and the OBS widget ─────────────────────────────────────────
@@ -1180,7 +1215,24 @@ module.exports = ({ appRequire, appDir } = {}) => {
     const t = UPDATED_TEXT[(trackState.lang || "").slice(0, 2)] || UPDATED_TEXT.ru;
     setTimeout(() => wc.executeJavaScript(`window.__ymModsToast && window.__ymModsToast(${JSON.stringify(t(version))}, 5000)`).catch(() => {}), 4000);
   };
+  // Linux: the release archive is unpacked and its install.sh --update copies the mod files (they live in the user's
+  // config folder, no root needed); the running app keeps the old code until it restarts
+  const installLinuxUpdate = (file) => {
+    const dir = path.join(os.tmpdir(), "ymmods-update", "unpacked");
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+    childProcess.execFileSync("tar", ["-xzf", file, "-C", dir], { timeout: 60000 });
+    const r = childProcess.spawnSync("bash", [path.join(dir, "YandexMusicMods-linux", "install.sh"), "--update"], { timeout: 60000, encoding: "utf8" });
+    log.info("mod update install.sh exit", r.status, String(r.stdout || "").trim(), String(r.stderr || "").trim());
+    return r.status === 0;
+  };
   const runInstaller = (file, relaunch) => {
+    if (!IS_WIN) {
+      let ok = false;
+      try { ok = installLinuxUpdate(file); } catch (e) { log.error("mod update install", e); }
+      if (ok && relaunch) setTimeout(() => { app.relaunch(); app.exit(0); }, 500);
+      return ok;
+    }
     const args = `-Action install -Silent -AppDir "${path.dirname(process.execPath)}"` + (relaunch ? "" : " -NoLaunch");
     const status = launchDetached(`"${file}" ${args}`);
     log.info("mod update installer started", file, relaunch ? "(relaunch)" : "(on quit)", "result", status);
@@ -1232,8 +1284,50 @@ module.exports = ({ appRequire, appDir } = {}) => {
     return { ...modUpdater.status(), auto: !!config().modAutoUpdate };
   });
 
+  // ── Linux: app.asar stays original, so the My Vibe wheel chunk is patched when the page requests it. The app serves
+  //    its pages with registerFileProtocol(callback({ path })): the path of that chunk is swapped for a patched copy ──
+  const wheelCacheDir = path.join(MOD_HOME, "cache");
+  const wheelFiles = new Map(); // requested file -> patched copy, or null when it is not the wheel chunk
+  const wheelFileFor = (file) => {
+    if (!/[\\/]_next[\\/]static[\\/]chunks[\\/][^\\/]+\.js$/.test(file)) return file;
+    if (wheelFiles.has(file)) return wheelFiles.get(file) || file;
+    let patchedFile = null;
+    try {
+      const code = fs.readFileSync(file, "utf8");
+      if (isWheelChunk(code)) {
+        const patched = patchWheelChunk(code);
+        if (patched) {
+          fs.mkdirSync(wheelCacheDir, { recursive: true });
+          patchedFile = path.join(wheelCacheDir, "wheel-" + path.basename(file));
+          fs.writeFileSync(patchedFile, patched);
+          log.info("wheel chunk patched", path.basename(file));
+        } else log.info("wheel chunk found but patterns changed (wheel stays native)", path.basename(file));
+      }
+    } catch (e) { log.error("wheel patch", e); }
+    wheelFiles.set(file, patchedFile);
+    return patchedFile || file;
+  };
+  const hookFileProtocol = (ses) => {
+    const proto = ses.protocol;
+    const original = proto.registerFileProtocol;
+    if (typeof original !== "function" || original.__ymmods) return;
+    const hooked = function (scheme, handler) {
+      return original.call(this, scheme, (request, callback) => handler(request, (res) => {
+        if (res && typeof res === "object" && typeof res.path === "string") res = { ...res, path: wheelFileFor(res.path) };
+        callback(res);
+      }));
+    };
+    hooked.__ymmods = true;
+    proto.registerFileProtocol = hooked;
+  };
+
   // ── Wiring ───────────────────────────────────────────────────────────────
   app.on("ready", () => {
+    // before the app's own "ready" handler registers its page protocol
+    if (IS_LINUX) {
+      try { fs.rmSync(wheelCacheDir, { recursive: true, force: true }); } catch {}
+      try { hookFileProtocol(session.defaultSession); } catch (e) { log.error("wheel protocol hook", e); }
+    }
     setupUpdater();
     setupSession(session.defaultSession);
     configureDiscord();

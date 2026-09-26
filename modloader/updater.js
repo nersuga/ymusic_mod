@@ -1,7 +1,8 @@
 "use strict";
 // Mod updates from GitHub releases (github.com/nersuga/ymusic_mod): the latest release carries
-// YandexMusicMods-Setup-<version>.exe and its .sha256. The installer is downloaded, its hash checked
-// against the .sha256 of the same release, and run silently; it closes the app, installs and (optionally) restarts it.
+// YandexMusicMods-Setup-<version>.exe (Windows) and YandexMusicMods-linux-<version>.tar.gz (Linux), each with a .sha256.
+// The package for this system is downloaded and its hash checked against the .sha256 of the same release; main.js
+// then runs it (Windows: the silent installer closes the app, installs and restarts it; Linux: its install.sh).
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -9,6 +10,7 @@ const crypto = require("crypto");
 
 const REPO = "nersuga/ymusic_mod";
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;
+const PACKAGE = process.platform === "win32" ? /^YandexMusicMods-Setup-.*\.exe$/i : /^YandexMusicMods-linux-.*\.tar\.gz$/i;
 
 const parse = (v) => String(v || "").replace(/^v/i, "").split(/[.+-]/).slice(0, 3).map((n) => parseInt(n, 10) || 0);
 const newer = (a, b) => {
@@ -55,7 +57,7 @@ class ModUpdater {
       if (!res.ok) throw new Error("GitHub: HTTP " + res.status);
       const rel = await res.json();
       const assets = rel.assets || [];
-      const exe = assets.find((a) => /^YandexMusicMods-Setup-.*\.exe$/i.test(a.name));
+      const exe = assets.find((a) => PACKAGE.test(a.name));
       const sha = exe && assets.find((a) => a.name.toLowerCase() === (exe.name + ".sha256").toLowerCase());
       this.latest = {
         version: String(rel.tag_name || rel.name || "").replace(/^v/i, ""),

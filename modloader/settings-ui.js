@@ -690,7 +690,9 @@
 
     // ── General ──
     ul.appendChild(makeHeader(t.mods));
-    addToggles(["disableUpdates", "trayUnloadWhenPaused", "trayTrimWhenPlaying"]);
+    // Windows-only features are not offered elsewhere: memory trimming and the taskbar thumbnail buttons
+    const isWin = !state.platform || state.platform === "win32";
+    addToggles(["disableUpdates", "trayUnloadWhenPaused", ...(isWin ? ["trayTrimWhenPlaying"] : [])]);
 
     // ── Mod updates (GitHub releases) ──
     ul.appendChild(makeHeader(t.groupModUpdate, 24));
@@ -733,7 +735,7 @@
     miniButton.textContent = t.miniPlayerShow;
     miniButton.addEventListener("click", () => window.ymMods.toggleMiniPlayer());
     ul.appendChild(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
-    addToggles(["miniPlayerOnTop", "miniPlayerLarge", "thumbarButtons", "showQuality", "playlistSearch"]);
+    addToggles(["miniPlayerOnTop", "miniPlayerLarge", ...(isWin ? ["thumbarButtons"] : []), "showQuality", "playlistSearch"]);
     addToggles(["autoPauseLock", "autoResumeUnlock", "autoPauseHeadphones"]);
 
     const sleepDesc = (info) => (info && info.mode === "minutes" ? t.sleepActiveMin(info.minutesLeft) : info && info.mode === "track" ? t.sleepActiveTrack : t.sleep[1]);
@@ -947,7 +949,8 @@
         if (res && res.name) mod.name = res.name;
       }));
     }
-    ul.appendChild(makeAction(t.openDir[0], t.openDir[1], () => window.ymMods.openDir()));
+    const dirNote = isWin || !state.modsDir ? t.openDir[1] : t.openDir[1].replace("%APPDATA%\\YandexMusic\\mods", state.modsDir);
+    ul.appendChild(makeAction(t.openDir[0], dirNote, () => window.ymMods.openDir()));
 
     // ── Backup ──
     ul.appendChild(makeHeader(t.groupBackup, 24));

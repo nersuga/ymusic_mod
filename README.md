@@ -7,11 +7,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"/></a>
 </p>
 
-Неофициальные моды для десктопной Яндекс Музыки на Windows 10 и 11: мини-плеер, глобальные горячие клавиши, темы, интеграции с Discord и Last.fm и ещё несколько десятков мелочей. Мод ставится без прав администратора и сам восстанавливается после обновлений приложения.
+Неофициальные моды для десктопной Яндекс Музыки на Windows 10, 11 и Linux: мини-плеер, глобальные горячие клавиши, темы, интеграции с Discord и Last.fm и ещё несколько десятков мелочей. Мод переживает обновления приложения.
 
 <p align="center"><img src="docs/installer.png" alt="Установщик" width="440"/></p>
 
-## Установка
+## Установка на Windows
 
 1. Установите [Яндекс Музыку для Windows](https://music.yandex.ru/download/), если её ещё нет.
 2. Скачайте `YandexMusicMods-Setup-x.y.z.exe` со страницы [Releases](https://github.com/nersuga/ymusic_mod/releases/latest).
@@ -35,6 +35,22 @@ YandexMusicMods-Setup-1.2.3.exe -Action uninstall -Silent -RemoveSettings
 ```
 
 `-AppDir <папка>` — другая копия приложения, `-NoLaunch` — не запускать её после установки. Код выхода `0` означает успех.
+
+## Установка на Linux
+
+Нужна [официальная Яндекс Музыка для Linux](https://music.yandex.ru/download/) (пакет `.deb`, ставится в `/opt/Яндекс Музыка`). Установка одной командой:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash
+```
+
+Скрипт скачает последний релиз, сверит SHA-256 и запустит `install.sh`. То же можно сделать вручную: скачать `YandexMusicMods-linux-x.y.z.tar.gz` из [Releases](https://github.com/nersuga/ymusic_mod/releases/latest), распаковать и выполнить `./install.sh`.
+
+Файлы приложения мод не меняет. Сам мод лежит в `~/.config/YandexMusic`, а в `/opt/Яндекс Музыка/resources/app/` кладётся маленький загрузчик — только для этого шага понадобится пароль `sudo`. Electron загружает эту папку вместо `app.asar`, а обновления пакета её не трогают, поэтому мод переживает обновления приложения без ремонта. Обновления самого мода ставятся из настроек без пароля.
+
+Удаление: `./install.sh --uninstall` (с `--remove-settings` удалятся и настройки) или `curl -fsSL https://raw.githubusercontent.com/nersuga/ymusic_mod/main/linux/get.sh | bash -s -- --uninstall`. Если приложение стоит не в `/opt`, укажите папку: `--app-dir <папка>`.
+
+На Linux нет кнопок в превью на панели задач, тем Mica и Acrylic и сжатия памяти в трее — это возможности Windows. Автопауза при блокировке экрана работает через D-Bus (GNOME, KDE и другие окружения с `org.freedesktop.ScreenSaver`). Глобальные горячие клавиши в сессии Wayland работают только там, где окружение пропускает их к приложениям X11.
 
 ## Возможности
 
@@ -213,7 +229,7 @@ cd ymusic_mod
 powershell -ExecutionPolicy Bypass -File build.ps1 -Version 1.2.3
 ```
 
-Результат — `dist\YandexMusicMods-Setup-1.2.3.exe` и файл с его SHA-256. Для подписи добавьте `-CertThumbprint <отпечаток>` (сертификат из `Cert:\CurrentUser\My`) или `-PfxPath cert.pfx`.
+Результат — `dist\YandexMusicMods-Setup-1.2.3.exe`, `dist\YandexMusicMods-linux-1.2.3.tar.gz` и файлы с их SHA-256. Для подписи добавьте `-CertThumbprint <отпечаток>` (сертификат из `Cert:\CurrentUser\My`) или `-PfxPath cert.pfx`.
 
 При разработке удобно править файлы прямо в установленном моде и забирать их в репозиторий командой `tools\sync.ps1 pull`; `push` копирует в обратную сторону.
 
@@ -231,12 +247,15 @@ modloader/        код мода, ставится в %APPDATA%\YandexMusic\mod
   updater.js        обновления мода из релизов GitHub
   localapi.js       локальный HTTP API
   widget.html       виджет для OBS
-  patcher.js        сборка app.asar с точкой входа мода
-  watch-update.ps1  восстановление после обновления, ремонт, удаление
+  wheelpatch.js     патч карусели «Моей волны»
+  patcher.js        сборка app.asar с точкой входа мода (Windows)
+  watch-update.ps1  восстановление после обновления, ремонт, удаление (Windows)
 mods/             CSS- и JS-моды по умолчанию
 installer/        Setup.exe (C#) и installer.ps1
+linux/            install.sh, get.sh и загрузчик ymmods-boot.js для Linux
 tools/sync.ps1    синхронизация с установленным модом
-build.ps1         сборка установщика
+tools/mktar.js    сборка архива для Linux с правами Unix
+build.ps1         сборка установщика и архива для Linux
 ```
 
 ## Лицензия

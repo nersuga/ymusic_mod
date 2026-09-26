@@ -4,7 +4,15 @@
 const net = require("net");
 
 const OP = { HANDSHAKE: 0, FRAME: 1, CLOSE: 2, PING: 3, PONG: 4 };
-const pipePath = (i) => (process.platform === "win32" ? `\\\\?\\pipe\\discord-ipc-${i}` : `${process.env.XDG_RUNTIME_DIR || process.env.TMPDIR || "/tmp"}/discord-ipc-${i}`);
+// Where Discord listens: a named pipe on Windows; a Unix socket on Linux, in the runtime folder or, for the Flatpak
+// and Snap builds, in their own subfolders of it
+const pipePaths = (() => {
+  if (process.platform === "win32") return Array.from({ length: 10 }, (_, i) => `\\\\?\\pipe\\discord-ipc-${i}`);
+  const runtime = process.env.XDG_RUNTIME_DIR || "";
+  const dirs = [...new Set([runtime, runtime && `${runtime}/app/com.discordapp.Discord`, runtime && `${runtime}/app/com.discordapp.DiscordCanary`,
+    runtime && `${runtime}/snap.discord`, process.env.TMPDIR || "", "/tmp"].filter(Boolean))];
+  return dirs.flatMap((d) => Array.from({ length: 10 }, (_, i) => `${d}/discord-ipc-${i}`));
+})();
 
 class DiscordPresence {
   constructor(log) {
@@ -35,10 +43,10 @@ class DiscordPresence {
 
   connect(index = 0) {
     if (!this.clientId || this.socket || this.connecting) return;
-    if (index > 9) { this.status = "no-discord"; this.scheduleRetry(); return; }
+    if (index >= pipePaths.length) { this.status = "no-discord"; this.scheduleRetry(); return; }
     this.connecting = true;
     this.status = "connecting";
-    const socket = net.createConnection(pipePath(index));
+    const socket = net.createConnection(pipePaths[index]);
     let buffer = Buffer.alloc(0);
     socket.once("connect", () => {
       this.connecting = false;

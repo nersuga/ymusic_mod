@@ -17,7 +17,10 @@ $Utf8Bom = New-Object Text.UTF8Encoding($true)
 $Utf8 = New-Object Text.UTF8Encoding($false)
 
 $ModloaderFiles = @("main.js", "preload.js", "features.js", "settings-ui.js", "mini-preload.js", "miniplayer.html",
-  "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js", "updater.js", "localapi.js", "widget.html")
+  "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js", "updater.js", "localapi.js", "widget.html",
+  "wheelpatch.js")
+# Windows-only helpers that the Linux package does not need (the asar is never patched there)
+$WindowsOnlyFiles = @("patcher.js", "watch-update.ps1", "repair.cmd")
 $ModFiles = @("_hello.js", "theme.css", "profile-menu.css", "vibe-settings.css", "vibe-settings.js", "window-buttons.css")
 
 Remove-Item $Obj -Recurse -Force -ErrorAction SilentlyContinue
@@ -112,3 +115,25 @@ if ($cert) {
 $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
 Set-Content -Path "$exe.sha256" -Value "$hash  $(Split-Path $exe -Leaf)" -Encoding ASCII
 Write-Host ("built {0} ({1:N0} KB) sha256 {2}" -f $exe, ((Get-Item $exe).Length / 1KB), $hash)
+
+# 6. Linux package: install.sh (with the version), the boot file and the mod, as a .tar.gz with Unix permissions
+$linuxObj = Join-Path $Obj "linux"
+New-Item -ItemType Directory -Force $linuxObj | Out-Null
+$installSh = [IO.File]::ReadAllText((Join-Path $Root "linux\install.sh"), $Utf8).Replace("__MOD_VERSION__", $Version)
+[IO.File]::WriteAllText((Join-Path $linuxObj "install.sh"), $installSh, $Utf8)
+$entries = @(
+  @{ src = (Join-Path $linuxObj "install.sh"); dst = "install.sh"; mode = "755" },
+  @{ src = (Join-Path $Root "linux\ymmods-boot.js"); dst = "ymmods-boot.js" },
+  @{ src = (Join-Path $Root "LICENSE"); dst = "LICENSE" }
+)
+foreach ($f in $ModloaderFiles | Where-Object { $WindowsOnlyFiles -notcontains $_ }) { $entries += @{ src = (Join-Path $Root "modloader\$f"); dst = "modloader/$f" } }
+foreach ($f in $ModFiles) { $entries += @{ src = (Join-Path $Root "mods\$f"); dst = "mods/$f" } }
+[IO.File]::WriteAllText((Join-Path $linuxObj "list.json"), (ConvertTo-Json @($entries) -Depth 3), $Utf8)
+& node --check (Join-Path $Root "linux\ymmods-boot.js")
+if ($LASTEXITCODE) { throw "syntax error in ymmods-boot.js" }
+$tgz = Join-Path $Dist "YandexMusicMods-linux-$Version.tar.gz"
+& node (Join-Path $Root "tools\mktar.js") $tgz "YandexMusicMods-linux" (Join-Path $linuxObj "list.json")
+if ($LASTEXITCODE) { throw "mktar failed" }
+$tgzHash = (Get-FileHash $tgz -Algorithm SHA256).Hash
+Set-Content -Path "$tgz.sha256" -Value "$($tgzHash.ToLower())  $(Split-Path $tgz -Leaf)" -Encoding ASCII
+Write-Host ("built {0} ({1:N0} KB) sha256 {2}" -f $tgz, ((Get-Item $tgz).Length / 1KB), $tgzHash)
