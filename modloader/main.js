@@ -281,15 +281,21 @@ module.exports = ({ appRequire, appDir } = {}) => {
     '[data-test-id="WHEEL_DESKTOP"][data-ym-fit] .swiper-wrapper{justify-content:center!important;transform:none!important}' +
     // Vibe page content root (overflow:hidden) starts below the title bar and before the right edge: it cuts the vibe canvas
     '[class*="Content_root_newVibe"]{margin-top:calc(-12px - 20px)!important;padding-top:20px!important;margin-right:-12px!important;padding-right:12px!important}';
-  // Mica / Acrylic: Windows 11 draws the blurred desktop behind the window; the app's surfaces become translucent
-  const MATERIAL_CSS = ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:rgba(20,20,20,.42);--ym-background-color-primary-enabled-player:rgba(20,20,20,.38);" +
-    "--ym-background-color-primary-enabled-popover:rgba(30,30,30,.72);--ym-background-color-primary-enabled-menu:rgba(30,30,30,.7);" +
+  // Mica / Acrylic: Windows 11 draws the blurred desktop behind the window; the app's surfaces become translucent.
+  // Chromium's backdrop-filter breaks over a transparent window (nothing gets blurred, the My Vibe canvas disappears),
+  // so every CSS blur is off and popups get near-opaque backgrounds instead
+  // (:not(#_) raises specificity above the app's own !important rules)
+  const HI = ":root:not(#_):not(#_)";
+  const MATERIAL_CSS = `${HI} *,${HI} *::before,${HI} *::after{backdrop-filter:none!important}` +
+    ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:rgba(20,20,20,.42);--ym-background-color-primary-enabled-player:rgba(20,20,20,.38);" +
+    "--ym-background-color-primary-enabled-popover:rgba(30,30,30,.97);--ym-background-color-primary-enabled-menu:rgba(30,30,30,.97);" +
     "--ym-background-color-primary-enabled-basic:transparent;--ym-background-color-primary-enabled-vibe:transparent;--ym-background-color-primary-enabled-header:rgba(20,20,20,.3)}" +
     "html,body{background:transparent!important}" +
     "[class*='DefaultLayout_rootNewVibe']{background:transparent!important}" +
     "section[class*='PlayerBarDesktop']{background:rgba(20,20,20,.38)!important}" +
     "[class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}" +
-    "[class*='StickyHeader_container']{background:transparent!important;backdrop-filter:blur(24px) saturate(140%)}";
+    `${HI} .UserWidget-Dialog{background:#1a1a1a!important}` +
+    `${HI} [class*='StickyHeader_container']{background:rgba(24,24,24,.94)!important}`;
   // Themes override the app's own colour variables (defined on .ym-dark-theme; doubled class = higher priority)
   const THEME_CSS = {
     amoled: ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:#000;--ym-background-color-primary-enabled-player:#000;" +
