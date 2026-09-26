@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/logo.png" alt="" width="128"/></p>
+<p align="center"><img src="docs/logo.png" alt="" width="200"/></p>
 
 <h1 align="center">ymusic_mod</h1>
 
