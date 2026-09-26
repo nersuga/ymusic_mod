@@ -42,7 +42,6 @@ module.exports = ({ appRequire, appDir } = {}) => {
     trayTrimDelaySec: 15,
     trayTrimIntervalMin: 10,
     wheelFilter: false,
-    wheelNoLoop: true,
     wheelShowSettingsTile: true,
     wheelSettingItem: null,
     hideWordsCard: false,
@@ -423,7 +422,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
   const own = (event) => isAppContents(event.sender);
   const isModFile = (name) => typeof name === "string" && name === path.basename(name) && /\.(css|js)$/.test(name);
   ipcMain.on("ymmods:flags", (event) => {
-    try { event.returnValue = { wheelNoLoop: !!config().wheelNoLoop }; } catch { event.returnValue = {}; }
+    // The wheel stays endless like in the app; with the custom wheel (only chosen tiles) each tile appears once
+    try { event.returnValue = { wheelNoLoop: !!config().wheelFilter }; } catch { event.returnValue = {}; }
   });
   ipcMain.handle("ymmods:get", (event) => {
     if (!own(event)) return null;

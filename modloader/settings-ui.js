@@ -49,9 +49,8 @@
       modJs: "JS — применится после перезагрузки (F5)",
       openDir: ["Открыть папку модов", "%APPDATA%\\YandexMusic\\mods — сюда кладите .css и .js"],
       wheel: "Колесо «Моя волна»",
-      wheelNoLoop: ["Колесо без повторов", "Каждая плитка один раз, прокрутка до первой и последней. Применяется после F5"],
       wheelShowSettingsTile: ["Плитка «Настроить Мою волну»", "Показывать в колесе кнопку настроек волны. Применяется после F5"],
-      wheelFilter: ["Оставлять только выбранные плитки", "Отмеченные ниже остаются в колесе, остальные вырезаются. Применяется после F5"],
+      wheelFilter: ["Оставлять только выбранные плитки", "Отмеченные ниже остаются в колесе, остальные вырезаются; каждая плитка показывается один раз, без бесконечной прокрутки. Применяется после F5"],
       wheelEmpty: "Откройте главную страницу — плитки колеса появятся здесь",
       artists: ["Волны по артистам", "Все плитки «My Vibe by artist»"],
       promo: "Промо",
@@ -166,9 +165,8 @@
       modJs: "JS — applied after reload (F5)",
       openDir: ["Open mods folder", "%APPDATA%\\YandexMusic\\mods — put your .css and .js files here"],
       wheel: "My Vibe wheel",
-      wheelNoLoop: ["Wheel without repeats", "Each tile appears once, scrolling stops at the first and last. Applied after F5"],
       wheelShowSettingsTile: ["Customize My Vibe tile", "Show the vibe settings button in the wheel. Applied after F5"],
-      wheelFilter: ["Keep only selected tiles", "Tiles checked below stay in the wheel, the rest are removed. Applied after F5"],
+      wheelFilter: ["Keep only selected tiles", "Tiles checked below stay in the wheel, the rest are removed; each tile appears once, without endless scrolling. Applied after F5"],
       wheelEmpty: "Open the home page — the wheel tiles will appear here",
       artists: ["Artist vibes", "All \"My Vibe by artist\" tiles"],
       promo: "Promo",
@@ -283,9 +281,8 @@
       modJs: "JS — қайта жүктегеннен кейін қолданылады (F5)",
       openDir: ["Модтар қалтасын ашу", "%APPDATA%\\YandexMusic\\mods — .css және .js файлдарын осында салыңыз"],
       wheel: "«Менің толқыным» дөңгелегі",
-      wheelNoLoop: ["Қайталаусыз дөңгелек", "Әр плитка бір рет, айналдыру бірінші және соңғысында тоқтайды. F5-тен кейін қолданылады"],
       wheelShowSettingsTile: ["«Менің толқынымды баптау» плиткасы", "Дөңгелекте толқын баптаулары батырмасын көрсету. F5-тен кейін қолданылады"],
-      wheelFilter: ["Тек таңдалған плиткаларды қалдыру", "Төменде белгіленгендер дөңгелекте қалады, қалғандары алынып тасталады. F5-тен кейін қолданылады"],
+      wheelFilter: ["Тек таңдалған плиткаларды қалдыру", "Төменде белгіленгендер дөңгелекте қалады, қалғандары алынып тасталады; әр плитка бір рет, шексіз айналдырусыз. F5-тен кейін қолданылады"],
       wheelEmpty: "Басты бетті ашыңыз — дөңгелек плиткалары осында пайда болады",
       artists: ["Әртістер бойынша толқындар", "Барлық «My Vibe by artist» плиткалары"],
       promo: "Промо",
@@ -400,9 +397,8 @@
       modJs: "JS — qayta yuklangandan keyin qo‘llanadi (F5)",
       openDir: ["Modlar papkasini ochish", "%APPDATA%\\YandexMusic\\mods — .css va .js fayllarni shu yerga joylang"],
       wheel: "«Mening to‘lqinim» g‘ildiragi",
-      wheelNoLoop: ["Takrorlarsiz g‘ildirak", "Har bir plitka bir marta, aylantirish birinchi va oxirgisida to‘xtaydi. F5 dan keyin qo‘llanadi"],
       wheelShowSettingsTile: ["«Mening to‘lqinimni sozlash» plitkasi", "G‘ildirakda to‘lqin sozlamalari tugmasini ko‘rsatish. F5 dan keyin qo‘llanadi"],
-      wheelFilter: ["Faqat tanlangan plitkalarni qoldirish", "Quyida belgilanganlar g‘ildirakda qoladi, qolganlari olib tashlanadi. F5 dan keyin qo‘llanadi"],
+      wheelFilter: ["Faqat tanlangan plitkalarni qoldirish", "Quyida belgilanganlar g‘ildirakda qoladi, qolganlari olib tashlanadi; har bir plitka bir marta, cheksiz aylantirishsiz. F5 dan keyin qo‘llanadi"],
       wheelEmpty: "Bosh sahifani oching — g‘ildirak plitkalari shu yerda paydo bo‘ladi",
       artists: ["Ijrochilar bo‘yicha to‘lqinlar", "Barcha «My Vibe by artist» plitkalari"],
       promo: "Promo",
@@ -978,7 +974,6 @@
       .sort(([ak, a], [bk, b]) => (ak === "artist:*" ? -1 : bk === "artist:*" ? 1 : (a[1] || "").localeCompare(b[1] || "") || a[0].localeCompare(b[0])));
     const keep = new Set(cfg.wheelKeep || []);
     const saveKeep = () => window.ymMods.setConfig({ wheelKeep: [...keep] });
-    ul.appendChild(makeToggle(...t.wheelNoLoop, !!cfg.wheelNoLoop, setToggle("wheelNoLoop")));
     ul.appendChild(makeToggle(...t.wheelShowSettingsTile, cfg.wheelShowSettingsTile !== false, setToggle("wheelShowSettingsTile")));
     ul.appendChild(makeToggle(...t.wheelFilter, !!cfg.wheelFilter, async (v) => {
       if (v && !keep.size) {
