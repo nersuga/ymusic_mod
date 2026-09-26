@@ -1,4 +1,4 @@
-# ymusic_mod
+<img src="docs/header.png" alt="ymusic_mod — моды для Яндекс Музыки" width="100%"/>
 
 [![Release](https://img.shields.io/github/v/release/nersuga/ymusic_mod)](https://github.com/nersuga/ymusic_mod/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
