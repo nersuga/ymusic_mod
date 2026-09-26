@@ -130,10 +130,25 @@
     .ymmods-quality[data-lossless] { border-color: var(--ym-controls-color-primary-default-enabled, #ff0); color: var(--ym-controls-color-primary-default-enabled, #ff0); }
     html[data-ym-no-quality] .ymmods-quality { display: none; }
     /* on the My Vibe page the badge sits above the app version, in the same pill style */
-    [class*="MainPage_betaSlot"]:has(.ymmods-quality) { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-    .ymmods-quality.ymmods-in-slot { margin: 0; padding: 4px 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.08);
+    [class*="MainPage_betaSlot"]:has(.ymmods-modver) { display: flex; align-items: center; gap: 6px; }
+    .ymmods-quality.ymmods-in-slot { position: absolute; right: 0; bottom: calc(100% + 6px); margin: 0; padding: 4px 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.08);
       color: rgba(255,255,255,.5); font: 500 13px/18px "YS Text", sans-serif; letter-spacing: 0; }
     .ymmods-quality.ymmods-in-slot[data-lossless] { color: var(--ym-controls-color-primary-default-enabled, #ff0); }
+    /* mod version next to the app version, same pill */
+    .ymmods-modver { position: relative; height: 26px; margin: 0 0 12px; padding: 4px 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.08); cursor: pointer;
+      color: rgba(255,255,255,.5); font: 500 13px/18px "YS Text", sans-serif; white-space: nowrap; transition: background-color .15s, color .15s; }
+    .ymmods-modver:hover { background: rgba(255,255,255,.14); color: rgba(255,255,255,.8); }
+    .ymmods-modver[data-update]::after { content: ""; position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--ym-controls-color-primary-default-enabled, #ff0); }
+    /* release notes: Yandex Music / mod tabs */
+    .ymmods-notes-tabs { display: flex; gap: 6px; padding: 0 0 12px; }
+    .ymmods-notes-tab { height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); background: transparent; cursor: pointer;
+      color: rgba(255,255,255,.88); font: 500 13px/30px "YS Text", sans-serif; transition: background-color .15s, border-color .15s; }
+    .ymmods-notes-tab:hover { background: rgba(255,255,255,.08); }
+    .ymmods-notes-tab[aria-selected="true"] { background: var(--ym-controls-color-primary-default-enabled, #ff0); border-color: transparent; color: #000; font-weight: 600; }
+    .ymmods-notes-list li { margin: 2px 0 2px 18px; list-style: disc; }
+    .ymmods-notes-list code { padding: 1px 5px; border-radius: 5px; background: rgba(255,255,255,.1); font: 12px/16px ui-monospace, Consolas, monospace; }
+    .ymmods-notes-more { margin-top: 12px; }
     /* repeat moved out of the My Vibe "…" menu into the player bar */
     [data-test-id="VIBE_CONTEXT_MENU_REPEAT_ITEM"] { display: none !important; }
     [data-ymmods="repeat"][aria-pressed="true"] { color: var(--ym-controls-color-primary-default-enabled, #ff0) !important; }
@@ -481,6 +496,157 @@
   if (window.ymMods && window.ymMods.onUpdateProgress) window.ymMods.onUpdateProgress(showUpdateProgress);
   window.__ymModsUpdateProgress = showUpdateProgress; // for checking the look
 
+  // ── Mod version next to the app version; release notes of Yandex Music / the mod in one window ──
+  const NOTES_TEXT = {
+    ru: { app: "Яндекс Музыка", mod: "Мод", pill: (v) => `Мод ${v}`, title: "Что нового в моде", update: (v) => `Доступно обновление мода ${v}`, loading: "Загружаю…", failed: "Не удалось загрузить изменения мода", empty: "Релизов мода пока нет", all: "Все релизы на GitHub", installed: "установлена", pre: "предварительная" },
+    en: { app: "Yandex Music", mod: "Mod", pill: (v) => `Mod ${v}`, title: "What's new in the mod", update: (v) => `Mod update ${v} is available`, loading: "Loading…", failed: "Could not load the mod changes", empty: "No mod releases yet", all: "All releases on GitHub", installed: "installed", pre: "pre-release" },
+    kk: { app: "Яндекс Музыка", mod: "Мод", pill: (v) => `Мод ${v}`, title: "Модта не жаңа", update: (v) => `Модтың ${v} жаңартуы қолжетімді`, loading: "Жүктелуде…", failed: "Мод өзгерістерін жүктеу мүмкін болмады", empty: "Мод шығарылымдары әлі жоқ", all: "Барлық шығарылымдар GitHub-та", installed: "орнатылған", pre: "алдын ала" },
+    uz: { app: "Yandex Musiqa", mod: "Mod", pill: (v) => `Mod ${v}`, title: "Modda nima yangi", update: (v) => `Mod yangilanishi ${v} mavjud`, loading: "Yuklanmoqda…", failed: "Mod o‘zgarishlarini yuklab bo‘lmadi", empty: "Mod relizlari hali yo‘q", all: "Barcha relizlar GitHub’da", installed: "o‘rnatilgan", pre: "dastlabki" },
+  };
+  const notesText = () => NOTES_TEXT[lang()] || NOTES_TEXT.en;
+  let modInfo = null; // { installed, latest, available }
+  const refreshModInfo = () => window.ymMods && window.ymMods.modUpdate && window.ymMods.modUpdate("status").then((st) => { modInfo = st; }).catch(() => {});
+  refreshModInfo();
+  setInterval(refreshModInfo, 10 * 60000);
+  let wantModNotes = false;
+  const updateModVersion = () => {
+    const version = $("RELEASE_NOTES_BUTTON");
+    if (!version || !modInfo || !modInfo.installed || modInfo.installed === "0.0.0") return;
+    let pill = version.parentElement.querySelector(".ymmods-modver");
+    if (!pill) {
+      pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "ymmods-modver";
+      pill.addEventListener("click", () => { wantModNotes = true; version.click(); });
+    }
+    if (pill.nextElementSibling !== version) version.before(pill);
+    const t = notesText();
+    pill.textContent = t.pill(modInfo.installed);
+    pill.toggleAttribute("data-update", !!modInfo.available);
+    pill.title = modInfo.available ? t.update(modInfo.latest) : t.title;
+  };
+
+  // Release notes body (Markdown from GitHub) → DOM nodes; text only, nothing from the network becomes HTML
+  const inline = (parent, textValue) => {
+    const re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+    let last = 0, m;
+    while ((m = re.exec(textValue))) {
+      if (m.index > last) parent.appendChild(document.createTextNode(textValue.slice(last, m.index)));
+      const tok = m[0];
+      const el = document.createElement(tok.startsWith("**") ? "strong" : tok.startsWith("`") ? "code" : "span");
+      el.textContent = tok.startsWith("**") ? tok.slice(2, -2) : tok.startsWith("`") ? tok.slice(1, -1) : tok.slice(1, tok.indexOf("]"));
+      parent.appendChild(el);
+      last = m.index + tok.length;
+    }
+    if (last < textValue.length) parent.appendChild(document.createTextNode(textValue.slice(last)));
+  };
+  const renderMarkdown = (body, paragraphClass) => {
+    const box = document.createElement("div");
+    box.className = "ymmods-notes-list";
+    let list = null;
+    for (const raw of body.replace(/\r/g, "").split("\n")) {
+      const line = raw.trim();
+      if (!line) { list = null; continue; }
+      if (/^```/.test(line) || /^>\s*\[!/.test(line)) continue;
+      const item = line.match(/^[-*+]\s+(.*)/) || line.match(/^\d+[.)]\s+(.*)/);
+      if (item) {
+        if (!list) { list = document.createElement("ul"); list.className = paragraphClass; box.appendChild(list); }
+        const li = document.createElement("li");
+        inline(li, item[1]);
+        list.appendChild(li);
+        continue;
+      }
+      list = null;
+      const p = document.createElement("p");
+      p.className = paragraphClass;
+      const heading = line.match(/^#{1,6}\s+(.*)/);
+      if (heading) { const b = document.createElement("strong"); inline(b, heading[1]); p.appendChild(b); }
+      else inline(p, line.replace(/^>\s?/, ""));
+      box.appendChild(p);
+    }
+    return box;
+  };
+  const renderModNotes = async (container, classes) => {
+    const t = notesText();
+    container.textContent = "";
+    const status = document.createElement("p");
+    status.className = classes.paragraph;
+    status.textContent = t.loading;
+    container.appendChild(status);
+    const res = window.ymMods && window.ymMods.modChangelog ? await window.ymMods.modChangelog() : null;
+    container.textContent = "";
+    const releases = res && res.ok ? res.releases : null;
+    if (!releases || !releases.length) {
+      status.textContent = releases ? t.empty : t.failed + (res && res.error ? ` (${res.error})` : "");
+      container.appendChild(status);
+    }
+    for (const r of releases || []) {
+      const note = document.createElement("div");
+      note.className = classes.note;
+      const h = document.createElement("h4");
+      h.className = classes.version;
+      h.textContent = r.version + (r.title ? " — " + r.title : "") + (res.installed === r.version ? ` · ${t.installed}` : "") + (r.prerelease ? ` · ${t.pre}` : "");
+      const textBox = document.createElement("div");
+      if (r.date) {
+        const d = document.createElement("span");
+        d.className = classes.date;
+        try { d.textContent = new Date(r.date).toLocaleDateString(lang(), { day: "numeric", month: "long", year: "numeric" }); } catch { d.textContent = r.date.slice(0, 10); }
+        textBox.appendChild(d);
+      }
+      textBox.appendChild(renderMarkdown(r.body || "", classes.paragraph));
+      note.append(h, textBox);
+      container.appendChild(note);
+    }
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "ymmods-notes-tab ymmods-notes-more";
+    more.textContent = t.all;
+    more.addEventListener("click", () => window.ymMods.openReleases());
+    container.appendChild(more);
+  };
+  const addNotesTabs = () => {
+    const root = document.querySelector('[class*="ReleaseNotesModal_root"]');
+    if (!root) return;
+    const header = root.querySelector('[class*="ReleaseNotesModal_modalHeader"]');
+    const notes = root.querySelector('[class*="ReleaseNotesModal_notes"]');
+    if (!header || !notes || root.querySelector(".ymmods-notes-tabs")) return;
+    // classes of the app's own entries, so the mod's list looks the same
+    const cls = (sel) => { const e = notes.querySelector(sel); return e ? e.className : ""; };
+    const classes = { note: cls('[class*="ReleaseNotesModal_note"]'), version: cls('[data-test-id="RELEASE_NOTES_VERSION"]'), date: cls('[class*="ReleaseNotesModal_date"]'), paragraph: cls('[class*="ReleaseNotesModal_paragraph"]') };
+    const modList = document.createElement("div");
+    modList.className = notes.className;
+    modList.hidden = true;
+    notes.after(modList);
+    const t = notesText();
+    const tabs = document.createElement("div");
+    tabs.className = "ymmods-notes-tabs";
+    const tab = (label, mod) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ymmods-notes-tab";
+      b.textContent = label;
+      b.addEventListener("click", () => select(mod));
+      return b;
+    };
+    const appTab = tab(t.app, false), modTab = tab(t.mod, true);
+    let loaded = false;
+    const select = (mod) => {
+      appTab.setAttribute("aria-selected", String(!mod));
+      modTab.setAttribute("aria-selected", String(mod));
+      notes.style.display = mod ? "none" : "";
+      modList.hidden = !mod;
+      if (mod && !loaded) { loaded = true; renderModNotes(modList, classes); }
+    };
+    tabs.append(appTab, modTab);
+    header.after(tabs);
+    // same left edge as the title and the notes
+    const title = header.querySelector("h3") || header;
+    const shift = Math.round(title.getBoundingClientRect().left - tabs.getBoundingClientRect().left);
+    if (shift > 0) tabs.style.paddingLeft = shift + "px";
+    select(wantModNotes);
+    wantModNotes = false;
+  };
+
   // ── Search in the "Add to playlist" submenu ──
   const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
   const norm = (v) => v.toLowerCase().replace(/ё/g, "е").trim();
@@ -531,6 +697,7 @@
     if (menu) addPlaylistSearch(menu);
     const vibeMenu = $("VIBE_CONTEXT_MENU");
     if (vibeMenu) addVibeMenuItems(vibeMenu);
+    addNotesTabs();
   };
   let menuTimer = null;
   new MutationObserver(() => {
@@ -544,6 +711,7 @@
     checkMenus();
     updateRepeatButton();
     updateMiniButton();
+    updateModVersion();
     if (s.volume !== null && lastVolume !== null && Math.abs(s.volume - lastVolume) > 0.001) showVolume(s.volume);
     lastVolume = s.volume;
     if (s.cover) setCover(s.cover);

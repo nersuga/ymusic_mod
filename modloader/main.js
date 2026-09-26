@@ -1082,6 +1082,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
   app.on("will-quit", () => {
     if (installOnQuit && modUpdater.downloaded && config().modAutoUpdate) { installOnQuit = false; runInstaller(modUpdater.downloaded, false); }
   });
+  ipcMain.handle("ymmods:mod-changelog", async (event) => {
+    if (!own(event)) return null;
+    try { return { ok: true, installed: modUpdater.installed, releases: await modUpdater.changelog() }; }
+    catch (e) { return { ok: false, installed: modUpdater.installed, error: String(e.message || e) }; }
+  });
+  ipcMain.handle("ymmods:open-releases", (event) => { if (own(event)) shell.openExternal("https://github.com/nersuga/ymusic_mod/releases"); });
   ipcMain.handle("ymmods:mod-update", async (event, action) => {
     if (!own(event)) return null;
     if (action === "check") { await modUpdater.check(); afterUpdateCheck(); }

@@ -26,6 +26,8 @@ if (window === window.top && location.protocol === "music-application:") {
     lastfmLogin: () => ipcRenderer.invoke("ymmods:lastfm-login"),
     lastfmLogout: () => ipcRenderer.invoke("ymmods:lastfm-logout"),
     modUpdate: (action) => ipcRenderer.invoke("ymmods:mod-update", action),
+    modChangelog: () => ipcRenderer.invoke("ymmods:mod-changelog"),
+    openReleases: () => ipcRenderer.invoke("ymmods:open-releases"),
     onUpdateProgress: (listener) => ipcRenderer.on("ymmods:update-progress", (_event, data) => listener(data)),
   });
 }

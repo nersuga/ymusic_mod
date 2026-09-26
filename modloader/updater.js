@@ -74,6 +74,22 @@ class ModUpdater {
     return this.status();
   }
 
+  // Release notes of the mod: the last releases (drafts skipped), cached for 10 minutes
+  async changelog() {
+    if (this.notes && Date.now() - this.notesAt < 600000) return this.notes;
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, { headers: { "User-Agent": "ymusic-mod-updater", Accept: "application/vnd.github+json" } });
+    if (!res.ok) throw new Error("GitHub: HTTP " + res.status);
+    this.notes = (await res.json()).filter((r) => !r.draft).map((r) => ({
+      version: String(r.tag_name || r.name || "").replace(/^v/i, ""),
+      title: r.name && r.name !== r.tag_name ? String(r.name) : "",
+      date: r.published_at || r.created_at || "",
+      body: String(r.body || "").slice(0, 20000),
+      prerelease: !!r.prerelease,
+    }));
+    this.notesAt = Date.now();
+    return this.notes;
+  }
+
   // Downloads the installer of the latest release and verifies it; returns its path.
   // onProgress({ stage: "download", percent } | { stage: "verify" })
   async download(onProgress = () => {}) {
