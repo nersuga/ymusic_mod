@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 $Repo = Split-Path $PSScriptRoot -Parent
 $Live = Join-Path $env:APPDATA "YandexMusic"
 $sets = @{
-  "modloader" = @("main.js", "preload.js", "features.js", "settings-ui.js", "mini-preload.js", "miniplayer.html", "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js")
+  "modloader" = @("main.js", "preload.js", "features.js", "settings-ui.js", "mini-preload.js", "miniplayer.html", "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js", "updater.js")
   "mods"      = @(Get-ChildItem (Join-Path $Repo "mods") -File | ForEach-Object { $_.Name })
 }
 foreach ($dir in $sets.Keys) {

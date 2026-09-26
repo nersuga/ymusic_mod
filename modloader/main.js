@@ -11,6 +11,7 @@ const thumbar = require("./thumbar");
 const { DiscordPresence, activityFor } = require("./discord");
 const { LastFm } = require("./lastfm");
 const storage = require("./storage");
+const { ModUpdater } = require("./updater");
 
 const { app, ipcMain, session, shell, webFrameMain, Tray, MenuItem, BrowserWindow, dialog, globalShortcut, screen } = electron;
 const MOD_HOME = __dirname;
@@ -84,9 +85,12 @@ module.exports = ({ appRequire, appDir } = {}) => {
     sessionDataDir: "", // player data (downloads, caches, login) outside %APPDATA%\YandexMusic; "" = default place
     downloadsMove: null, // { target } — the move of the player data, applied at the next start
     downloadsMoveResult: null,
+    modAutoUpdate: false, // install mod updates from GitHub automatically (when the app quits)
+    modUpdateNotified: "", // the version the "update available" notice was shown for
+    modLastVersion: "", // mod version seen at the last start: a change means the mod was just updated
   };
   // Set only by the main process (dedicated IPC), never by a config patch from the page
-  const PROTECTED_KEYS = new Set(["lastfmSession", "lastfmUser", "sessionDataDir", "downloadsMove", "downloadsMoveResult", "wheelItems", "miniPlayerBounds"]);
+  const PROTECTED_KEYS = new Set(["modUpdateNotified", "modLastVersion", "lastfmSession", "lastfmUser", "sessionDataDir", "downloadsMove", "downloadsMoveResult", "wheelItems", "miniPlayerBounds"]);
   // Not written into exported settings files: credentials
   const PRIVATE_KEYS = ["lastfmSession", "lastfmUser", "lastfmApiSecret", "sessionDataDir", "downloadsMove", "downloadsMoveResult"];
   const config = () => {
@@ -133,19 +137,24 @@ module.exports = ({ appRequire, appDir } = {}) => {
   const isAppContents = (wc) => wc && !wc.isDestroyed() && isAppUrl(wc.getURL());
 
   // ── Updates: skip checks while disabled; when enabled, re-patch after install ──
+  // A plain child dies together with the quitting app (its process tree/job), so long-running helpers are created
+  // through WMI: they get their own console and are not tied to this process at all
+  // The PowerShell code goes as -EncodedCommand (UTF-16LE base64): quotes in paths survive intact
+  const launchDetached = (command) => {
+    const launcher = "$si = ([wmiclass]'Win32_ProcessStartup').CreateInstance(); $si.ShowWindow = 0; " +
+      `$r = ([wmiclass]'Win32_Process').Create('${command.replace(/'/g, "''")}', '${os.tmpdir().replace(/'/g, "''")}', $si); exit $r.ReturnValue`;
+    const encoded = Buffer.from(launcher, "utf16le").toString("base64");
+    const r = childProcess.spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], { windowsHide: true, timeout: 20000 });
+    return r.status;
+  };
   let watcherStarted = false;
   const startUpdateWatcher = () => {
     if (watcherStarted) return;
     watcherStarted = true;
     const script = path.join(MOD_HOME, "watch-update.ps1");
-    const command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}" ` +
-      `-Mode update -AppDir "${path.dirname(process.execPath)}" -WaitPid ${process.pid}`;
-    // A plain child dies together with the quitting app (its process tree/job), so the watcher is created
-    // through WMI: it gets its own console and is not tied to this process at all
-    const launcher = "$si = ([wmiclass]'Win32_ProcessStartup').CreateInstance(); $si.ShowWindow = 0; " +
-      `$r = ([wmiclass]'Win32_Process').Create('${command.replace(/'/g, "''")}', '${os.tmpdir().replace(/'/g, "''")}', $si); exit $r.ReturnValue`;
-    const r = childProcess.spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", launcher], { windowsHide: true, timeout: 20000 });
-    log.info("update watcher started", script, "result", r.status);
+    const status = launchDetached(`powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}" ` +
+      `-Mode update -AppDir "${path.dirname(process.execPath)}" -WaitPid ${process.pid}`);
+    log.info("update watcher started", script, "result", status);
   };
   const setupUpdater = () => {
     let updater;
@@ -424,6 +433,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if ("miniPlayerOnTop" in patch || "miniPlayerLarge" in patch) applyMiniOptions();
     if (["discordRpc", "discordClientId", "discordShowPaused"].some((k) => k in patch)) configureDiscord();
     if (["lastfmEnabled", "lastfmApiKey", "lastfmApiSecret"].some((k) => k in patch)) configureLastFm();
+    if (patch.modAutoUpdate) afterUpdateCheck();
     return { ok: true, hotkeyStatus, discord: discord.status };
   });
   ipcMain.handle("ymmods:toggle", (event, name, enabled) => {
@@ -1018,12 +1028,87 @@ module.exports = ({ appRequire, appDir } = {}) => {
     return true;
   });
 
+  // ── Mod updates from GitHub releases ────────────────────────────────────
+  const modUpdater = new ModUpdater({ modHome: MOD_HOME, log });
+  const UPDATE_TEXT = {
+    ru: (v) => `Доступна новая версия мода ${v} — Настройки → Моды`,
+    en: (v) => `Mod update ${v} is available — Settings → Mods`,
+    kk: (v) => `Модтың жаңа нұсқасы ${v} қолжетімді — Баптаулар → Модтар`,
+    uz: (v) => `Modning yangi versiyasi ${v} mavjud — Sozlamalar → Modlar`,
+  };
+  let installOnQuit = false;
+  const sendProgress = (data) => { const wc = mainContents(); if (wc) wc.send("ymmods:update-progress", { version: modUpdater.latest && modUpdater.latest.version, ...data }); };
+  const UPDATED_TEXT = {
+    ru: (v) => `Мод обновлён до ${v}`, en: (v) => `The mod is updated to ${v}`,
+    kk: (v) => `Мод ${v} нұсқасына жаңартылды`, uz: (v) => `Mod ${v} versiyasiga yangilandi`,
+  };
+  // after an update: one notice on the first page load with the new version
+  const announceUpdated = (wc) => {
+    const version = modUpdater.installed;
+    const cfg = config();
+    if (cfg.modLastVersion === version || cfg.__invalid) return;
+    const first = !cfg.modLastVersion;
+    cfg.modLastVersion = version;
+    try { saveConfig(cfg); } catch {}
+    if (first) return;
+    const t = UPDATED_TEXT[(trackState.lang || "").slice(0, 2)] || UPDATED_TEXT.ru;
+    setTimeout(() => wc.executeJavaScript(`window.__ymModsToast && window.__ymModsToast(${JSON.stringify(t(version))}, 5000)`).catch(() => {}), 4000);
+  };
+  const runInstaller = (file, relaunch) => {
+    const args = `-Action install -Silent -AppDir "${path.dirname(process.execPath)}"` + (relaunch ? "" : " -NoLaunch");
+    const status = launchDetached(`"${file}" ${args}`);
+    log.info("mod update installer started", file, relaunch ? "(relaunch)" : "(on quit)", "result", status);
+    return status === 0;
+  };
+  const afterUpdateCheck = async () => {
+    if (!modUpdater.available) return;
+    const version = modUpdater.latest.version;
+    const cfg = config();
+    if (cfg.modUpdateNotified !== version) {
+      const wc = mainContents();
+      const t = UPDATE_TEXT[(trackState.lang || "").slice(0, 2)] || UPDATE_TEXT.ru;
+      if (wc) {
+        wc.executeJavaScript(`window.__ymModsToast && window.__ymModsToast(${JSON.stringify(t(version))}, 8000)`).catch(() => {});
+        try { cfg.modUpdateNotified = version; saveConfig(cfg); } catch {}
+      }
+    }
+    // automatic mode: fetch it now, install when the app quits (music is not interrupted)
+    if (cfg.modAutoUpdate) {
+      try { await modUpdater.download(sendProgress); installOnQuit = true; sendProgress({ stage: "ready" }); }
+      catch (e) { log.error("mod auto-update", e.message); sendProgress({ stage: "error", error: e.message }); }
+    }
+  };
+  const checkModUpdates = () => modUpdater.check().then(afterUpdateCheck).catch(() => {});
+  app.on("will-quit", () => {
+    if (installOnQuit && modUpdater.downloaded && config().modAutoUpdate) { installOnQuit = false; runInstaller(modUpdater.downloaded, false); }
+  });
+  ipcMain.handle("ymmods:mod-update", async (event, action) => {
+    if (!own(event)) return null;
+    if (action === "check") { await modUpdater.check(); afterUpdateCheck(); }
+    if (action === "install") {
+      try {
+        const file = await modUpdater.download(sendProgress);
+        // the installer closes the app, installs the new mod and starts the app again
+        sendProgress({ stage: "install" });
+        if (!runInstaller(file, true)) { sendProgress({ stage: "error", error: "installer" }); return { ...modUpdater.status(), error: "could not start the installer" }; }
+        return { ...modUpdater.status(), installing: true };
+      } catch (e) {
+        sendProgress({ stage: "error", error: String(e.message || e) });
+        return { ...modUpdater.status(), error: String(e.message || e) };
+      }
+    }
+    return { ...modUpdater.status(), auto: !!config().modAutoUpdate };
+  });
+
   // ── Wiring ───────────────────────────────────────────────────────────────
   app.on("ready", () => {
     setupUpdater();
     setupSession(session.defaultSession);
     configureDiscord();
     configureLastFm();
+    // first check a little after the start, then every 6 hours
+    setTimeout(checkModUpdates, 20000);
+    setInterval(checkModUpdates, 6 * 3600000);
   });
   let mainWindowSetUp = false;
   app.on("browser-window-created", (_event, win) => {
@@ -1035,7 +1120,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     // Tray behaviour only for the window that shows the app itself
     win.webContents.on("did-navigate", (_e, url) => {
       // Hotkeys too: a second instance (which only hands over to the first one) never gets here
-      if (!mainWindowSetUp && isAppUrl(url)) { mainWindowSetUp = true; setupTray(win); registerHotkeys(); }
+      if (!mainWindowSetUp && isAppUrl(url)) { mainWindowSetUp = true; setupTray(win); registerHotkeys(); announceUpdated(win.webContents); }
     });
   });
   log.info("mod loaded from", MOD_HOME);

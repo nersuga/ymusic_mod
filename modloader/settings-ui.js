@@ -58,6 +58,18 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Артист",
+      groupModUpdate: "Обновления мода",
+      modVersion: "Версия мода",
+      modInstalled: (v) => `Установлена ${v}`,
+      modLatest: (v) => `доступна ${v}`,
+      modUpToDate: "это последняя версия",
+      modChecking: "Проверяю…",
+      modCheck: "Проверить",
+      modUpdate: (v) => `Обновить до ${v}`,
+      modDownloading: "Скачиваю и проверяю установщик…",
+      modInstalling: "Устанавливаю — Яндекс Музыка перезапустится",
+      modNoRelease: "На GitHub ещё нет релизов",
+      modAutoUpdate: ["Обновлять автоматически", "Новая версия скачивается в фоне и ставится, когда вы закрываете приложение — музыка не прерывается"],
       miniPlayerOnTop: ["Мини-плеер поверх окон", "Также переключается булавкой в самом мини-плеере"],
       miniPlayerLarge: ["Крупный мини-плеер", "Карточка с большой обложкой и прогрессом трека вместо компактной полоски"],
       thumbarButtons: ["Кнопки в панели задач", "Назад, пауза и вперёд под превью окна при наведении на значок в панели задач"],
@@ -148,6 +160,18 @@
       album: "Album",
       playlist: "Playlist",
       artistTile: "Artist",
+      groupModUpdate: "Mod updates",
+      modVersion: "Mod version",
+      modInstalled: (v) => `Installed ${v}`,
+      modLatest: (v) => `${v} is available`,
+      modUpToDate: "this is the latest version",
+      modChecking: "Checking…",
+      modCheck: "Check",
+      modUpdate: (v) => `Update to ${v}`,
+      modDownloading: "Downloading and verifying the installer…",
+      modInstalling: "Installing — Yandex Music will restart",
+      modNoRelease: "No releases on GitHub yet",
+      modAutoUpdate: ["Update automatically", "A new version is downloaded in the background and installed when you close the app — music is not interrupted"],
       miniPlayerOnTop: ["Mini player on top", "Also toggled by the pin in the mini player itself"],
       miniPlayerLarge: ["Large mini player", "A card with a big cover and track progress instead of the compact bar"],
       thumbarButtons: ["Taskbar buttons", "Previous, pause and next under the window preview of the taskbar icon"],
@@ -238,6 +262,18 @@
       album: "Альбом",
       playlist: "Плейлист",
       artistTile: "Әртіс",
+      groupModUpdate: "Мод жаңартулары",
+      modVersion: "Мод нұсқасы",
+      modInstalled: (v) => `Орнатылған ${v}`,
+      modLatest: (v) => `${v} қолжетімді`,
+      modUpToDate: "бұл соңғы нұсқа",
+      modChecking: "Тексерудемін…",
+      modCheck: "Тексеру",
+      modUpdate: (v) => `${v} нұсқасына жаңарту`,
+      modDownloading: "Орнатқышты жүктеп, тексерудемін…",
+      modInstalling: "Орнатылуда — Яндекс Музыка қайта іске қосылады",
+      modNoRelease: "GitHub-та әлі шығарылымдар жоқ",
+      modAutoUpdate: ["Автоматты түрде жаңарту", "Жаңа нұсқа фонда жүктеліп, қолданбаны жапқанда орнатылады — музыка үзілмейді"],
       miniPlayerOnTop: ["Шағын ойнатқыш терезелердің үстінде", "Шағын ойнатқыштағы түйреуішпен де ауыстырылады"],
       miniPlayerLarge: ["Үлкен шағын ойнатқыш", "Шағын жолақтың орнына үлкен мұқабасы мен трек барысы бар карта"],
       thumbarButtons: ["Тапсырмалар тақтасындағы түймелер", "Тапсырмалар тақтасындағы белгішенің алдын ала көрінісінде: артқа, кідірту, алға"],
@@ -328,6 +364,18 @@
       album: "Albom",
       playlist: "Pleylist",
       artistTile: "Ijrochi",
+      groupModUpdate: "Mod yangilanishlari",
+      modVersion: "Mod versiyasi",
+      modInstalled: (v) => `O‘rnatilgan ${v}`,
+      modLatest: (v) => `${v} mavjud`,
+      modUpToDate: "bu oxirgi versiya",
+      modChecking: "Tekshirilmoqda…",
+      modCheck: "Tekshirish",
+      modUpdate: (v) => `${v} ga yangilash`,
+      modDownloading: "O‘rnatuvchi yuklanmoqda va tekshirilmoqda…",
+      modInstalling: "O‘rnatilmoqda — Yandex Musiqa qayta ishga tushadi",
+      modNoRelease: "GitHub’da hali relizlar yo‘q",
+      modAutoUpdate: ["Avtomatik yangilash", "Yangi versiya fonda yuklanadi va ilovani yopganingizda o‘rnatiladi — musiqa to‘xtamaydi"],
       miniPlayerOnTop: ["Mini pleyer oynalar ustida", "Mini pleyerdagi to‘g‘nog‘ich bilan ham almashtiriladi"],
       miniPlayerLarge: ["Katta mini pleyer", "Ixcham chiziq o‘rniga katta muqova va trek jarayoni bilan karta"],
       thumbarButtons: ["Vazifalar panelidagi tugmalar", "Vazifalar panelidagi belgi oldindan ko‘rinishi ostida: orqaga, pauza, oldinga"],
@@ -576,12 +624,45 @@
       buttons.filter(Boolean).forEach((b) => box.appendChild(b));
       return box;
     };
+    const note = (row, textValue, bad) => { row.ymDesc.textContent = textValue; row.ymDesc.classList.toggle("ymmods-note", !!bad); row.ymDesc.classList.remove("ymmods-ok"); };
     const setToggle = (key) => (v) => window.ymMods.setConfig({ [key]: v });
     const addToggles = (keys) => { for (const key of keys) ul.appendChild(makeToggle(...t[key], !!cfg[key], setToggle(key))); };
 
     // ── General ──
     ul.appendChild(makeHeader(t.mods));
     addToggles(["disableUpdates", "trayUnloadWhenPaused", "trayTrimWhenPlaying"]);
+
+    // ── Mod updates (GitHub releases) ──
+    ul.appendChild(makeHeader(t.groupModUpdate, 24));
+    const updateBox = chipGroup();
+    const { li: updateRow } = makeRow(t.modVersion, t.modChecking, updateBox);
+    ul.appendChild(updateRow);
+    const renderUpdate = (st, busyText) => {
+      updateBox.textContent = "";
+      if (!st) return;
+      let desc = t.modInstalled(st.installed === "0.0.0" ? "—" : st.installed);
+      let bad = false;
+      if (busyText) desc = busyText;
+      else if (st.error && /no releases/.test(st.error)) desc += " · " + t.modNoRelease;
+      else if (st.error) { desc += " · " + t.failed + ": " + st.error; bad = true; }
+      else if (st.available) desc += " · " + t.modLatest(st.latest);
+      else if (st.latest) desc += " · " + t.modUpToDate;
+      note(updateRow, desc, bad);
+      if (st.available && !st.error) updateRow.ymDesc.classList.add("ymmods-ok");
+      if (busyText) return;
+      updateBox.append(chipButton(t.modCheck, async () => { renderUpdate(st, t.modChecking); renderUpdate(await window.ymMods.modUpdate("check")); }));
+      if (st.available) {
+        const b = chipButton(t.modUpdate(st.latest), async () => {
+          renderUpdate(st, t.modDownloading);
+          const res = await window.ymMods.modUpdate("install");
+          renderUpdate(res, res && res.installing ? t.modInstalling : null);
+        });
+        b.setAttribute("aria-pressed", "true"); // highlighted like a selected chip
+        updateBox.append(b);
+      }
+    };
+    window.ymMods.modUpdate("status").then((st) => (st && !st.checkedAt ? window.ymMods.modUpdate("check") : st)).then((st) => renderUpdate(st));
+    ul.appendChild(makeToggle(...t.modAutoUpdate, !!cfg.modAutoUpdate, setToggle("modAutoUpdate")));
 
     // ── Player ──
     ul.appendChild(makeHeader(t.groupPlayer, 24));
@@ -683,7 +764,6 @@
     const cacheBox = chipGroup();
     const { li: cacheRow } = makeRow(t.cache[0], "…", cacheBox);
     ul.appendChild(cacheRow);
-    const note = (row, textValue, bad) => { row.ymDesc.textContent = textValue; row.ymDesc.classList.toggle("ymmods-note", !!bad); row.ymDesc.classList.remove("ymmods-ok"); };
     const renderStorage = async () => {
       const info = await window.ymMods.storageInfo();
       if (!info) return;

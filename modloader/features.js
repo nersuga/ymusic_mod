@@ -144,6 +144,20 @@
     .ymmods-plsearch svg { width: 16px; height: 16px; flex: none; opacity: .6; }
     .ymmods-plsearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #fff; font: 500 14px/18px "YS Text", sans-serif; }
     .ymmods-plsearch input::placeholder { color: rgba(255,255,255,.45); }
+    /* mod update progress: a ring above the avatar in the side bar */
+    .ymmods-update { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 4px; cursor: default;
+      color: rgba(255,255,255,.72); font: 500 10px/12px "YS Text", sans-serif; text-align: center; animation: ymmods-in .25s ease; }
+    .ymmods-update svg { width: 40px; height: 40px; transform: rotate(-90deg); }
+    .ymmods-update circle { fill: none; stroke-width: 3; }
+    .ymmods-update .track { stroke: rgba(255,255,255,.14); }
+    .ymmods-update .bar { stroke: var(--ym-controls-color-primary-default-enabled, #ff0); stroke-linecap: round; stroke-dasharray: 100.5; transition: stroke-dashoffset .3s; }
+    .ymmods-update .ring { position: relative; width: 40px; height: 40px; }
+    .ymmods-update .pct { position: absolute; inset: 0; display: grid; place-items: center; font: 600 11px/1 "YS Text", sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+    .ymmods-update[data-stage="verify"] svg, .ymmods-update[data-stage="install"] svg { animation: ymmods-spin 1s linear infinite; }
+    .ymmods-update[data-stage="error"] .bar { stroke: #ff6b5e; }
+    .ymmods-update[data-stage="ready"] .bar { stroke: #8fd694; }
+    @keyframes ymmods-spin { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+    @keyframes ymmods-in { from { opacity: 0; transform: translateY(6px); } }
     .ymmods-plempty { padding: 10px 16px; color: rgba(255,255,255,.5); font: 500 13px/16px "YS Text", sans-serif; }`;
   document.head.appendChild(style);
   const toast = document.createElement("div");
@@ -190,12 +204,12 @@
   const notice = document.createElement("div");
   notice.id = "ymmods-notice";
   let noticeTimer;
-  function notify(message) {
+  function notify(message, ms = 1400) {
     if (!notice.isConnected) document.body.appendChild(notice);
     notice.textContent = message;
     notice.style.opacity = "1";
     clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(() => { notice.style.opacity = "0"; }, 1400);
+    noticeTimer = setTimeout(() => { notice.style.opacity = "0"; }, ms);
   }
   window.__ymModsToast = notify;
 
@@ -437,6 +451,35 @@
     btn.addEventListener("click", (e) => { e.stopPropagation(); window.ymMods && window.ymMods.toggleMiniPlayer(); });
     queue.after(btn);
   };
+
+  // ── Mod update progress (reported by the main process): a ring above the avatar ──
+  const UPDATE_TEXT = {
+    ru: { download: "Скачиваю обновление мода", verify: "Проверяю установщик", install: "Устанавливаю — приложение перезапустится", ready: "Обновление установится, когда вы закроете приложение", error: "Не удалось обновить мод", short: { download: "Мод", verify: "Проверка", install: "Установка", ready: "Готово", error: "Ошибка" } },
+    en: { download: "Downloading the mod update", verify: "Verifying the installer", install: "Installing — the app will restart", ready: "The update installs when you close the app", error: "Mod update failed", short: { download: "Mod", verify: "Verify", install: "Install", ready: "Ready", error: "Error" } },
+    kk: { download: "Мод жаңартуы жүктелуде", verify: "Орнатқыш тексерілуде", install: "Орнатылуда — қолданба қайта іске қосылады", ready: "Жаңарту қолданбаны жапқанда орнатылады", error: "Модты жаңарту сәтсіз", short: { download: "Мод", verify: "Тексеру", install: "Орнату", ready: "Дайын", error: "Қате" } },
+    uz: { download: "Mod yangilanishi yuklanmoqda", verify: "O‘rnatuvchi tekshirilmoqda", install: "O‘rnatilmoqda — ilova qayta ishga tushadi", ready: "Yangilanish ilovani yopganingizda o‘rnatiladi", error: "Modni yangilab bo‘lmadi", short: { download: "Mod", verify: "Tekshiruv", install: "O‘rnatish", ready: "Tayyor", error: "Xato" } },
+  };
+  const updateWidget = document.createElement("div");
+  updateWidget.className = "ymmods-update";
+  updateWidget.innerHTML = '<div class="ring"><svg viewBox="0 0 40 40"><circle class="track" cx="20" cy="20" r="16"/><circle class="bar" cx="20" cy="20" r="16"/></svg><span class="pct"></span></div><span class="cap"></span>';
+  let updateHide = null;
+  const showUpdateProgress = (p) => {
+    const t = UPDATE_TEXT[lang()] || UPDATE_TEXT.en;
+    const profile = document.querySelector('[class*="NavbarDesktopUserWidget_userProfileContainer"]');
+    if (!profile) return;
+    if (updateWidget.nextElementSibling !== profile) profile.before(updateWidget);
+    const stage = p.stage;
+    const percent = stage === "download" ? p.percent || 0 : 100;
+    updateWidget.dataset.stage = stage;
+    updateWidget.querySelector(".bar").style.strokeDashoffset = String(100.5 * (1 - (stage === "verify" || stage === "install" ? 0.25 : percent / 100)));
+    updateWidget.querySelector(".pct").textContent = stage === "download" ? percent + "%" : stage === "error" ? "!" : stage === "ready" ? "✓" : "";
+    updateWidget.querySelector(".cap").textContent = t.short[stage] || "";
+    updateWidget.title = (t[stage] || "") + (p.version ? " · " + p.version : "") + (p.error ? ": " + p.error : "");
+    clearTimeout(updateHide);
+    if (stage === "error" || stage === "ready") updateHide = setTimeout(() => updateWidget.remove(), stage === "error" ? 10000 : 8000);
+  };
+  if (window.ymMods && window.ymMods.onUpdateProgress) window.ymMods.onUpdateProgress(showUpdateProgress);
+  window.__ymModsUpdateProgress = showUpdateProgress; // for checking the look
 
   // ── Search in the "Add to playlist" submenu ──
   const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
