@@ -6,7 +6,9 @@ param(
   [string]$Version = "1.0.0",
   [string]$CertThumbprint = "",
   [string]$PfxPath = "",
-  [string]$TimestampServer = "http://timestamp.digicert.com"
+  [string]$TimestampServer = "http://timestamp.digicert.com",
+  # release signing key (ssh-keygen -t ed25519); its public part is pinned in modloader\sigverify.js and linux\get.sh
+  [string]$SigningKey = (Join-Path $env:USERPROFILE ".ymmods\release_ed25519")
 )
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
@@ -18,7 +20,7 @@ $Utf8 = New-Object Text.UTF8Encoding($false)
 
 $ModloaderFiles = @("main.js", "preload.js", "features.js", "settings-ui.js", "mini-preload.js", "miniplayer.html",
   "patcher.js", "watch-update.ps1", "repair.cmd", "thumbar.js", "discord.js", "lastfm.js", "storage.js", "updater.js", "localapi.js", "widget.html",
-  "wheelpatch.js")
+  "wheelpatch.js", "sigverify.js")
 # Windows-only helpers that the Linux package does not need (the asar is never patched there)
 $WindowsOnlyFiles = @("patcher.js", "watch-update.ps1", "repair.cmd")
 $ModFiles = @("_hello.js", "theme.css", "profile-menu.css", "vibe-settings.css", "vibe-settings.js", "window-buttons.css")
@@ -158,3 +160,19 @@ if ($LASTEXITCODE) { throw "mktar failed (macos)" }
 $macHash = (Get-FileHash $macTgz -Algorithm SHA256).Hash
 Set-Content -Path "$macTgz.sha256" -Value "$($macHash.ToLower())  $(Split-Path $macTgz -Leaf)" -Encoding ASCII
 Write-Host ("built {0} ({1:N0} KB) sha256 {2}" -f $macTgz, ((Get-Item $macTgz).Length / 1KB), $macHash)
+
+# 8. Release signatures (<file>.sig, SSHSIG with namespace "ymusic_mod"): the in-app updater and get.sh accept a
+#    package only with a valid signature of the pinned key, so a replaced release cannot be installed
+if (-not (Test-Path $SigningKey)) { throw "signing key not found: $SigningKey (ssh-keygen -t ed25519 -f $SigningKey)" }
+$sshKeygen = (Get-Command ssh-keygen -ErrorAction Stop).Source
+foreach ($f in @($exe, $tgz, $macTgz)) {
+  Remove-Item "$f.sig" -ErrorAction SilentlyContinue
+  # ssh-keygen reports progress on stderr, which PowerShell would treat as an error
+  $prevPreference = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  & $sshKeygen -Y sign -f $SigningKey -n ymusic_mod $f 2>$null | Out-Null
+  $ErrorActionPreference = $prevPreference
+  if (-not (Test-Path "$f.sig")) { throw "signing failed: $f" }
+  & node -e "const fs=require('fs');process.exit(require(process.argv[1]).verify(fs.readFileSync(process.argv[2]),fs.readFileSync(process.argv[2]+'.sig','utf8'))?0:1)" (Join-Path $Root "modloader\sigverify.js") $f
+  if ($LASTEXITCODE) { throw "signature does not verify: $f" }
+  Write-Host "signed $(Split-Path $f -Leaf)"
+}

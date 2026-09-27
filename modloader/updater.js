@@ -7,6 +7,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const { verify: verifySignature } = require("./sigverify");
 
 const REPO = "nersuga/ymusic_mod";
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -59,12 +60,14 @@ class ModUpdater {
       const assets = rel.assets || [];
       const exe = assets.find((a) => PACKAGE.test(a.name));
       const sha = exe && assets.find((a) => a.name.toLowerCase() === (exe.name + ".sha256").toLowerCase());
+      const sig = exe && assets.find((a) => a.name.toLowerCase() === (exe.name + ".sig").toLowerCase());
       this.latest = {
         version: String(rel.tag_name || rel.name || "").replace(/^v/i, ""),
         notes: String(rel.body || "").slice(0, 2000),
         url: rel.html_url,
         exe: exe ? { name: exe.name, url: exe.browser_download_url, size: exe.size } : null,
         sha: sha ? { url: sha.browser_download_url } : null,
+        sig: sig ? { url: sig.browser_download_url } : null,
       };
       this.error = "";
       if (this.downloaded && !this.downloaded.includes(this.latest.version)) this.downloaded = null;
@@ -98,6 +101,7 @@ class ModUpdater {
     if (!this.available) throw new Error("no update");
     if (this.downloaded && fs.existsSync(this.downloaded)) return this.downloaded;
     if (!this.latest.sha) throw new Error("the release has no .sha256 file");
+    if (!this.latest.sig) throw new Error("the release is not signed");
     this.busy = "download";
     try {
       const get = async (url) => {
@@ -123,13 +127,20 @@ class ModUpdater {
       onProgress({ stage: "verify" });
       const actual = crypto.createHash("sha256").update(body).digest("hex");
       if (actual !== expected) throw new Error("the installer does not match its SHA-256");
-      const dir = path.join(os.tmpdir(), "ymmods-update");
-      fs.mkdirSync(dir, { recursive: true });
-      for (const f of fs.readdirSync(dir)) { try { fs.unlinkSync(path.join(dir, f)); } catch {} }
-      const file = path.join(dir, this.latest.exe.name);
-      fs.writeFileSync(file, body);
+      // authenticity: the signature must come from the pinned release key (a hash from the same release
+      // proves nothing if the release itself was replaced)
+      let signed = false;
+      try { signed = verifySignature(body, (await get(this.latest.sig.url)).toString("utf8")); }
+      catch (e) { throw new Error("bad signature: " + e.message); }
+      if (!signed) throw new Error("the installer signature does not match");
+      // a fresh private folder (mode 0700): on Linux the temp folder is shared by all users, so a fixed name
+      // could be prepared by someone else to swap the file between the check and the start
+      if (this.downloaded) { try { fs.rmSync(path.dirname(this.downloaded), { recursive: true, force: true }); } catch {} }
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ymmods-update-"));
+      const file = path.join(dir, path.basename(this.latest.exe.name));
+      fs.writeFileSync(file, body, { flag: "wx", mode: 0o600 });
       this.downloaded = file;
-      this.log.info("mod update downloaded and verified", file, actual);
+      this.log.info("mod update downloaded, hash and signature verified", file, actual);
       return file;
     } finally {
       this.busy = "";

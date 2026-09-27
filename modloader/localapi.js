@@ -42,7 +42,11 @@ class LocalApi {
   }
 
   start(port) {
-    const server = http.createServer((req, res) => this.handle(req, res));
+    // an error in one request must never reach the app's main process
+    const server = http.createServer((req, res) => {
+      try { this.handle(req, res); }
+      catch (e) { try { if (!res.headersSent) res.writeHead(500); res.end(); } catch {} }
+    });
     server.on("error", (e) => {
       this.status = "error";
       this.error = e.code === "EADDRINUSE" ? "port-busy" : String(e.message || e);
@@ -126,7 +130,10 @@ class LocalApi {
     if (req.method === "POST" && p.startsWith("/api/cmd/")) {
       const auth = String(req.headers.authorization || "");
       const token = auth.startsWith("Bearer ") ? auth.slice(7) : url.searchParams.get("token") || "";
-      const ok = this.token && token.length === this.token.length && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(this.token));
+      // timingSafeEqual needs equal byte lengths: compare the byte buffers (a multi-byte token of the same
+      // character length would otherwise throw)
+      const given = Buffer.from(token, "utf8"), expected = Buffer.from(this.token, "utf8");
+      const ok = expected.length > 0 && given.length === expected.length && crypto.timingSafeEqual(given, expected);
       if (!ok) return send(401, '{"error":"token required"}');
       const name = p.slice(9);
       if (!COMMANDS.includes(name)) return send(404, JSON.stringify({ error: "unknown command", commands: COMMANDS }));

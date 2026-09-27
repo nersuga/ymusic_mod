@@ -35,7 +35,9 @@ module.exports = ({ appRequire, appDir } = {}) => {
 
   // ── Config ───────────────────────────────────────────────────────────────
   const DEFAULTS = {
-    disableUpdates: true,
+    // App updates bring Chromium/Electron security fixes: on by default where the mod survives them (Windows re-patches,
+    // Linux keeps its boot through the dpkg hook). On macOS an update replaces the whole app and drops the mod
+    disableUpdates: process.platform === "darwin",
     trayUnloadWhenPaused: true,
     trayUnloadDelaySec: 30,
     trayTrimWhenPlaying: true,
@@ -771,16 +773,35 @@ module.exports = ({ appRequire, appDir } = {}) => {
     for (const key of PRIVATE_KEYS) delete imported[key];
     applyConfigPatch(cfg, imported);
     saveConfig(cfg);
-    let written = 0;
-    for (const [name, content] of Object.entries(bundle.mods || {})) {
-      if (!isModFile(name) || typeof content !== "string") continue;
+    // CSS mods only restyle the page. JS mods run inside the app with the Yandex session: a settings file from
+    // someone else could take over the account, so they are installed only after a separate confirmation
+    const entries = Object.entries(bundle.mods || {}).filter(([name, content]) => isModFile(name) && typeof content === "string");
+    const scripts = entries.filter(([name]) => name.endsWith(".js")).map(([name]) => name);
+    let allowScripts = false;
+    if (scripts.length) {
+      const ru = !/^(en|uz)/.test(trackState.lang || ""); // Russian for ru and kk, English otherwise
+      const { response } = await dialog.showMessageBox(BrowserWindow.fromWebContents(event.sender), {
+        type: "warning",
+        buttons: ru ? ["Пропустить", "Установить JS-моды"] : ["Skip", "Install JS mods"],
+        defaultId: 0, cancelId: 0, noLink: true,
+        title: ru ? "JS-моды в файле настроек" : "JS mods in the settings file",
+        message: ru ? `В файле есть JS-моды (${scripts.length}):` : `The file contains JS mods (${scripts.length}):`,
+        detail: scripts.join("\n") + "\n\n" + (ru
+          ? "JS-мод выполняется внутри Яндекс Музыки с доступом к вашему аккаунту. Устанавливайте их, только если доверяете тому, кто дал файл. Настройки и CSS-моды уже импортированы."
+          : "A JS mod runs inside Yandex Music with access to your account. Install them only if you trust whoever gave you the file. Settings and CSS mods are already imported."),
+      });
+      allowScripts = response === 1;
+    }
+    let written = 0, skipped = 0;
+    for (const [name, content] of entries) {
+      if (name.endsWith(".js") && !allowScripts) { skipped++; continue; }
       const base = name.replace(/^_+/, "");
       for (const variant of [base, "_" + base]) if (variant !== name) try { fs.unlinkSync(path.join(modsDir, variant)); } catch {}
       fs.writeFileSync(path.join(modsDir, name), content);
       written++;
     }
     registerHotkeys();
-    log.info("settings imported", filePaths[0], written, "mods");
+    log.info("settings imported", filePaths[0], written, "mods", skipped ? `(${skipped} JS mods skipped)` : "");
     setTimeout(() => { if (!event.sender.isDestroyed()) event.sender.reload(); }, 300);
     return { ok: true, mods: written };
   });
@@ -1221,12 +1242,16 @@ module.exports = ({ appRequire, appDir } = {}) => {
   // Linux and macOS: the release archive is unpacked and its install.sh --update copies the mod files (they live in
   // the user's folder, no root needed); the running app keeps the old code until it restarts
   const installUnixUpdate = (file) => {
-    const dir = path.join(os.tmpdir(), "ymmods-update", "unpacked");
-    fs.rmSync(dir, { recursive: true, force: true });
-    fs.mkdirSync(dir, { recursive: true });
-    childProcess.execFileSync("tar", ["-xzf", file, "-C", dir], { timeout: 60000 });
-    const pkgDir = IS_LINUX ? "YandexMusicMods-linux" : "YandexMusicMods-macos";
-    const r = childProcess.spawnSync("bash", [path.join(dir, pkgDir, "install.sh"), "--update"], { timeout: 60000, encoding: "utf8" });
+    // a fresh private folder (0700): /tmp is shared on Linux, a fixed path could be prepared by another user
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ymmods-unpack-"));
+    let r;
+    try {
+      childProcess.execFileSync("tar", ["-xzf", file, "-C", dir], { timeout: 60000 });
+      const pkgDir = IS_LINUX ? "YandexMusicMods-linux" : "YandexMusicMods-macos";
+      r = childProcess.spawnSync("bash", [path.join(dir, pkgDir, "install.sh"), "--update"], { timeout: 60000, encoding: "utf8" });
+    } finally {
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+    }
     log.info("mod update install.sh exit", r.status, String(r.stdout || "").trim(), String(r.stderr || "").trim());
     return r.status === 0;
   };
