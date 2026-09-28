@@ -94,6 +94,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
     modUpdateNotified: "", // the version the "update available" notice was shown for
     modLastVersion: "", // mod version seen at the last start: a change means the mod was just updated
     accentFromCover: false, // the app's yellow accent follows the average colour of the cover
+    vibeAfterQueue: false, // when an album / playlist ends, My Vibe starts (the button in the player bar)
     autoPauseLock: false, // pause when the computer is locked
     autoResumeUnlock: true, // …and play again after unlocking (only if the mod paused it)
     autoPauseHeadphones: false, // pause when the audio output device in use disappears
@@ -293,47 +294,72 @@ module.exports = ({ appRequire, appDir } = {}) => {
   // so every CSS blur is off and popups get near-opaque backgrounds instead
   // (:not(#_) raises specificity above the app's own !important rules)
   const HI = ":root:not(#_):not(#_)";
+  // The app puts .ym-dark-theme or .ym-light-theme on body (the My Vibe page is dark in the light theme too),
+  // so every theme has a dark and a light part scoped by that class. html[data-ym-scheme] (set by features.js)
+  // is the theme the user chose, whatever the current page shows: the Yandex ID menu and the window material follow it
+  const DK = "body.ym-dark-theme", LT = "body.ym-light-theme";
+  const DARK_VARS = ".ym-dark-theme.ym-dark-theme", LIGHT_VARS = ".ym-light-theme.ym-light-theme";
+  const htmlWith = (body) => `html:has(>${body})`;
   const MATERIAL_CSS = `${HI} *,${HI} *::before,${HI} *::after{backdrop-filter:none!important}` +
-    ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:rgba(20,20,20,.42);--ym-background-color-primary-enabled-player:rgba(20,20,20,.38);" +
+    `${DARK_VARS}{--ym-background-color-primary-enabled-content:rgba(20,20,20,.42);--ym-background-color-primary-enabled-player:rgba(20,20,20,.38);` +
     "--ym-background-color-primary-enabled-popover:rgba(30,30,30,.97);--ym-background-color-primary-enabled-menu:rgba(30,30,30,.97);" +
     "--ym-background-color-primary-enabled-basic:transparent;--ym-background-color-primary-enabled-vibe:transparent;--ym-background-color-primary-enabled-header:rgba(20,20,20,.3)}" +
+    `${LIGHT_VARS}{--ym-background-color-primary-enabled-content:rgba(255,255,255,.5);` +
+    "--ym-background-color-primary-enabled-popover:rgba(246,246,246,.97);--ym-background-color-primary-enabled-menu:rgba(246,246,246,.97);" +
+    "--ym-background-color-primary-enabled-basic:transparent;--ym-background-color-primary-enabled-header:rgba(255,255,255,.35)}" +
     "html,body{background:transparent!important}" +
     "[class*='DefaultLayout_rootNewVibe']{background:transparent!important}" +
-    "section[class*='PlayerBarDesktop']{background:rgba(20,20,20,.38)!important}" +
-    "[class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}" +
+    // light theme: the window material is light, but My Vibe keeps its white text: a dark layer under it
+    "html[data-ym-scheme=light] [class*='DefaultLayout_rootNewVibe']{background:rgba(10,10,10,.62)!important}" +
+    `${DK} section[class*='PlayerBarDesktop']{background:rgba(20,20,20,.38)!important}` +
+    `${DK} [class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}` +
     `${HI} .UserWidget-Dialog{background:#1a1a1a!important}` +
-    `${HI} [class*='StickyHeader_container']{background:rgba(24,24,24,.94)!important}`;
-  // Themes override the app's own colour variables (defined on .ym-dark-theme; doubled class = higher priority)
+    `${HI}[data-ym-scheme=light] .UserWidget-Dialog{background:#f5f5f5!important}` +
+    `${HI} ${DK} [class*='StickyHeader_container']{background:rgba(24,24,24,.94)!important}` +
+    `${HI} ${LT} [class*='StickyHeader_container']{background:rgba(250,250,250,.94)!important}`;
+  // Themes override the app's own colour variables (doubled class = higher priority than the app's own rule)
   const THEME_CSS = {
-    amoled: ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:#000;--ym-background-color-primary-enabled-player:#000;" +
+    amoled: `${DARK_VARS}{--ym-background-color-primary-enabled-content:#000;--ym-background-color-primary-enabled-player:#000;` +
       "--ym-background-color-primary-enabled-popover:#0b0b0b;--ym-background-color-primary-enabled-menu:rgba(8,8,8,.92);" +
       "--ym-background-color-primary-enabled-vibe:#000;--ym-background-color-primary-enabled-header:rgba(0,0,0,.7);--ym-background-color-secondary-enabled-blur:#161616}" +
-      "body{background:#000!important}" +
+      `${DK}{background:#000!important}` +
       // My Vibe start screen paints its own track-coloured gradient on the layout root
-      "[class*='DefaultLayout_rootNewVibe']{background:#000!important}",
-    glass: ".ym-dark-theme.ym-dark-theme{--ym-background-color-primary-enabled-content:rgba(16,16,16,.55);--ym-background-color-primary-enabled-player:rgba(18,18,18,.5);" +
+      `${DK} [class*='DefaultLayout_rootNewVibe']{background:#000!important}` +
+      // light counterpart: pure white instead of the app's light grey
+      `${LIGHT_VARS}{--ym-background-color-primary-enabled-content:#fff;--ym-background-color-primary-enabled-basic:#fff;` +
+      "--ym-background-color-primary-enabled-popover:#fff;--ym-background-color-primary-enabled-menu:rgba(255,255,255,.94);" +
+      "--ym-background-color-primary-enabled-header:rgba(255,255,255,.7);--ym-background-color-secondary-enabled-blur:#ededed}" +
+      `${LT}{background:#fff!important}`,
+    glass: `${DARK_VARS}{--ym-background-color-primary-enabled-content:rgba(16,16,16,.55);--ym-background-color-primary-enabled-player:rgba(18,18,18,.5);` +
       "--ym-background-color-primary-enabled-popover:rgba(26,26,26,.6);--ym-background-color-primary-enabled-menu:rgba(26,26,26,.55);" +
       "--ym-background-color-primary-enabled-basic:transparent}" +
+      `${LIGHT_VARS}{--ym-background-color-primary-enabled-content:rgba(255,255,255,.58);` +
+      "--ym-background-color-primary-enabled-popover:rgba(250,250,250,.72);--ym-background-color-primary-enabled-menu:rgba(250,250,250,.7);" +
+      "--ym-background-color-primary-enabled-basic:transparent;--ym-background-color-primary-enabled-header:rgba(255,255,255,.3)}" +
       // blurred cover of the current track behind the whole app
       // (body must be transparent: its own background is painted above a z-index:-1 layer)
       // the blurred cover itself: two cross-fading layers created by features.js
       ".ymmods-cover-layer{display:block!important}" +
-      "html{background:#000!important}body{background:transparent!important}" +
+      `${htmlWith(DK)}{background:#000!important}${htmlWith(LT)}{background:#f4f4f4!important}body{background:transparent!important}` +
       // My Vibe start screen: its own gradient on the layout root would hide the blurred cover
       "[class*='DefaultLayout_rootNewVibe']{background:transparent!important}" +
-      // only the bar itself (its controls block also carries PlayerBarDesktop*/_root classes)
-      "section[class*='PlayerBarDesktop']{background:rgba(18,18,18,.5)!important;backdrop-filter:blur(30px) saturate(150%)}" +
+      // only the bar itself (its controls block also carries PlayerBarDesktop*/_root classes);
+      // in the light theme the app tints the bar with the cover colour: that stays
+      `${DK} section[class*='PlayerBarDesktop']{background:rgba(18,18,18,.5)!important;backdrop-filter:blur(30px) saturate(150%)}` +
       // played part of the track lightens the whole bar background: too loud on glass
-      "[class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}" +
+      `${DK} [class*='ChangeTimecodeBackground_backgroundProgressbar']::before{background-color:rgba(255,255,255,.07)!important}` +
       // real popups only: a blur on a button inside a glass panel shows up as a dark blob
       "[role=menu]:not(button),[role=dialog]:not(button){backdrop-filter:blur(30px) saturate(150%)}" +
       // sticky page headers stack their own translucent layer on the content's one: a dark strip
       "[class*='StickyHeader_container']{background:transparent!important;backdrop-filter:blur(24px) saturate(140%)}",
     mica: MATERIAL_CSS,
     acrylic: MATERIAL_CSS,
-    contrast: ".ym-dark-theme.ym-dark-theme{--ym-controls-color-primary-text-enabled:hsla(0,0%,100%,.82);--ym-controls-color-secondary-text-enabled:hsla(0,0%,100%,.8);" +
+    contrast: `${DARK_VARS}{--ym-controls-color-primary-text-enabled:hsla(0,0%,100%,.82);--ym-controls-color-secondary-text-enabled:hsla(0,0%,100%,.8);` +
       "--ym-controls-color-primary-text-disabled:#8a8a8a;--ym-controls-color-secondary-outline-enabled_stroke:#8a8a8a;--ym-controls-color-primary-outline-enabled:#666;" +
-      "--ym-outline-color-primary-disabled:hsla(0,0%,100%,.14)}",
+      "--ym-outline-color-primary-disabled:hsla(0,0%,100%,.14)}" +
+      `${LIGHT_VARS}{--ym-controls-color-primary-text-enabled:#2e2e2e;--ym-controls-color-primary-text-disabled:#555;` +
+      "--ym-controls-color-secondary-outline-enabled_stroke:rgba(0,0,0,.6);--ym-controls-color-primary-outline-enabled:#b3b3b3;" +
+      "--ym-outline-color-primary-disabled:rgba(0,0,0,.22)}",
   };
   const featureCssKeys = new WeakMap();
   const applyFeatureCss = (wc) => {
@@ -353,6 +379,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
       `document.documentElement.toggleAttribute("data-ym-accent-cover", ${!!cfg.accentFromCover});` +
       `document.documentElement.toggleAttribute("data-ym-autopause-headphones", ${!!cfg.autoPauseHeadphones});` +
       `document.documentElement.toggleAttribute("data-ym-no-plsearch", ${!cfg.playlistSearch});` +
+      `document.documentElement.toggleAttribute("data-ym-vibe-after", ${!!cfg.vibeAfterQueue});` +
       `document.documentElement.setAttribute("data-ym-anim", ${JSON.stringify(cfg.vibeAnimation)})`).catch(() => {});
     const prev = featureCssKeys.get(wc);
     if (prev) wc.removeInsertedCSS(prev).catch(() => {});
@@ -686,6 +713,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (!own(event) || !state || typeof state !== "object") return;
     const langChanged = state.lang !== trackState.lang;
     trackState = state;
+    // native parts (window material tint, menus, dialogs) follow the light / dark choice made in the app
+    if (["light", "dark", "system"].includes(state.themeMode) && electron.nativeTheme.themeSource !== state.themeMode) electron.nativeTheme.themeSource = state.themeMode;
     sendMini();
     pushPresence();
     lastfm.update(state);

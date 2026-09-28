@@ -19,5 +19,12 @@
 .UserWidget-Iframe {
   background: transparent !important;
 }
+/* Светлая тема: Яндекс ID рисует меню светлым — подложка тоже светлое стекло
+   (атрибут ставит мод по выбранной теме, а не по текущей странице: на «Моей волне» меню тоже светлое) */
+html[data-ym-scheme="light"] .UserWidget-Dialog {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .72) 0%, rgba(245, 245, 245, .9) 100%) !important;
+  border-color: rgba(0, 0, 0, .06) !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .6) !important;
+}
 /* iframe inline по умолчанию — отсюда был зазор в 1px */
 .UserWidget-Iframe { display: block; }

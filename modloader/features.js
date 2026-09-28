@@ -1,6 +1,7 @@
 // Page-side features of the mod (injected into the app page by modloader/main.js):
 //   window.__ymModsPlayer.cmd(name)  — like / dislike / shuffle / repeat / volume commands (play/pause/next/prev go through the app's own IPC)
 //   window.__ymModsToast(text)       — a short notice at the top of the window
+//   window.__ymModsTheme             — the app's own light / dark / system choice (read and set)
 //   volume percentage (label under the slider), track state for the mini player / sleep timer / Discord / Last.fm,
 //   cover URL for the glass theme, quality badge in the player bar, search in the "Add to playlist" menu
 (() => {
@@ -40,7 +41,8 @@
       const v = f.memoizedProps && f.memoizedProps.value;
       if (!v || typeof v !== "object") continue;
       if (v.isRootModel && v.sonataState) found.root = v;
-      if (v.playbackController) found.pc = v.playbackController;
+      if (v.playbackController) { found.pc = v.playbackController; found.player = v; }
+      if (typeof v.formatMessage === "function") found.intl = v;
     }
     if (found.root) models = found;
     return models;
@@ -54,7 +56,12 @@
     }
     return o;
   };
-  const playback = () => { const m = findModels(); return m && m.pc ? unbox(m.pc.activePlayback) : null; };
+  const playback = () => {
+    const m = findModels();
+    if (!m || !m.pc) return null;
+    // right after a start nothing is active yet: the main playback still exists
+    try { return unbox(m.pc.activePlayback) || m.pc.getPlayback(); } catch { return null; }
+  };
   const sonata = () => { const m = findModels(); return m ? m.root.sonataState : null; };
   const mediaSource = () => {
     try {
@@ -65,11 +72,56 @@
     } catch { return null; }
   };
 
+  // ── The app's own notification banner (icon, text, close button), as its repeat / quality changes show it.
+  //    Its modules are found by their code, not by webpack ids (those change with every app build);
+  //    if they are not found, the mod's own short notice is used ──
+  let appNotify;
+  const findAppNotify = () => {
+    if (appNotify !== undefined) return appNotify;
+    appNotify = null;
+    try {
+      let req;
+      self.webpackChunk_N_E.push([[Symbol("ymmods")], {}, (r) => { req = r; }]);
+      const find = (test) => { for (const id of Object.keys(req.m)) { const src = String(req.m[id]); if (test(src)) return { id, src }; } return null; };
+      // useNotify(): notify(content, { containerId }) → toastModule.X({ message, options })
+      const hook = find((src) => /notify:\(0,\w+\.useCallback\)\(\(\w+,\w+\)=>\{let\{containerId:/.test(src));
+      // the banner layout: { cover, message, closeToast }
+      const layout = find((src) => src.includes("withDefaultCloseButton") && src.includes("NOTIFICATION_COVER"));
+      if (!hook || !layout) return null;
+      const call = /\(0,(\w+)\.(\w+)\)\(\{message:/.exec(hook.src);
+      const dep = call && new RegExp(String.raw`[,\s]` + call[1] + String.raw`=\w+\((\d+)\)`).exec(hook.src);
+      const show = dep && req(dep[1])[call[2]];
+      const Layout = Object.values(req(layout.id)).find((v) => typeof v === "function");
+      if (typeof show === "function" && Layout) appNotify = { show, Layout };
+    } catch {}
+    return appNotify;
+  };
+  const reactEl = (type, props) => ({ $$typeof: Symbol.for("react.transitional.element"), type, key: null, ref: null, props });
+  // the app's own message text when it has one (same wording as its banners), else the mod's
+  const appMessage = (id, fallback) => {
+    try { const m = findModels(); const t = m && m.intl ? m.intl.formatMessage({ id }) : ""; if (t && t !== id) return t; } catch {}
+    return fallback;
+  };
+  const banner = (iconSvg, message) => {
+    const app = findAppNotify();
+    if (!app) { notify(message); return; }
+    try {
+      const cover = reactEl("span", { style: { display: "flex", width: 24, height: 24, color: "var(--ym-controls-color-primary-text-enabled_variant)" },
+        dangerouslySetInnerHTML: { __html: iconSvg } });
+      app.show({
+        message: (p) => reactEl(app.Layout, { cover, coverRadius: "s", closeToast: p && p.closeToast,
+          message: reactEl("div", { role: "alert", style: { fontWeight: 500 }, children: message }) }),
+        options: { autoClose: 2000, closeOnClick: false, pauseOnHover: true, draggable: false, single: true, containerId: "INFO" },
+      });
+    } catch { notify(message); }
+  };
+  const spriteSvg = (id) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><use href="/icons/sprite.svg#${id}"/></svg>`;
+
   const TEXT = {
-    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено", repeatBtn: "Повтор трека", download: "Скачать", downloaded: "Скачано", downloading: "Скачиваю трек…", mini: "Мини-плеер", headphones: "Пауза: устройство вывода звука отключено" },
-    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found", repeatBtn: "Repeat track", download: "Download", downloaded: "Downloaded", downloading: "Downloading the track…", mini: "Mini player", headphones: "Paused: the audio output was disconnected" },
-    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш", headphones: "Кідірту: дыбыс шығару құрылғысы ажыратылды" },
-    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer", headphones: "Pauza: ovoz chiqarish qurilmasi uzildi" },
+    ru: { shuffleOn: "Перемешивание включено", shuffleOff: "Перемешивание выключено", repeat: { none: "Повтор выключен", context: "Повтор списка", one: "Повтор трека" }, noShuffle: "Здесь перемешивание недоступно", search: "Найти плейлист", nothing: "Ничего не найдено", repeatBtn: "Повтор трека", download: "Скачать", downloaded: "Скачано", downloading: "Скачиваю трек…", mini: "Мини-плеер", headphones: "Пауза: устройство вывода звука отключено", vibeAfter: "Далее — Моя волна", vibeMode: { off: "Далее Моя волна: выкл", list: "Далее Моя волна: после списка", track: "Далее Моя волна: после трека" }, vibeStart: { list: "Список закончился — включаю Мою волну", track: "Трек закончился — включаю Мою волну" } },
+    en: { shuffleOn: "Shuffle on", shuffleOff: "Shuffle off", repeat: { none: "Repeat off", context: "Repeat all", one: "Repeat track" }, noShuffle: "Shuffle is not available here", search: "Find a playlist", nothing: "Nothing found", repeatBtn: "Repeat track", download: "Download", downloaded: "Downloaded", downloading: "Downloading the track…", mini: "Mini player", headphones: "Paused: the audio output was disconnected", vibeAfter: "Then My Vibe", vibeMode: { off: "Then My Vibe: off", list: "Then My Vibe: after the list", track: "Then My Vibe: after this track" }, vibeStart: { list: "The list is over — starting My Vibe", track: "The track is over — starting My Vibe" } },
+    kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш", headphones: "Кідірту: дыбыс шығару құрылғысы ажыратылды", vibeAfter: "Кейін — Менің толқыным", vibeMode: { off: "Кейін Менің толқыным: өшірулі", list: "Кейін Менің толқыным: тізімнен кейін", track: "Кейін Менің толқыным: осы тректен кейін" }, vibeStart: { list: "Тізім аяқталды — Менің толқыным қосылуда", track: "Трек аяқталды — Менің толқыным қосылуда" } },
+    uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer", headphones: "Pauza: ovoz chiqarish qurilmasi uzildi", vibeAfter: "Keyin — Mening to‘lqinim", vibeMode: { off: "Keyin Mening to‘lqinim: o‘chiq", list: "Keyin Mening to‘lqinim: ro‘yxatdan keyin", track: "Keyin Mening to‘lqinim: shu trekdan keyin" }, vibeStart: { list: "Ro‘yxat tugadi — Mening to‘lqinim yoqilmoqda", track: "Trek tugadi — Mening to‘lqinim yoqilmoqda" } },
   };
   const lang = () => { let l = ""; try { l = JSON.parse(localStorage.getItem("funtech-lang") || "{}").value || ""; } catch {} return (l || document.documentElement.lang || "ru").slice(0, 2); };
   const text = () => TEXT[lang()] || TEXT.en;
@@ -114,6 +166,7 @@
     html:not([data-ym-no-volume-percent]) [class*="ChangeVolume_wrapperSlider"][class*="ChangeVolume_wrapperSlider"] { --height-slider: 15rem !important; position: relative; padding-bottom: calc(8px + 1.5rem) !important; box-sizing: border-box; }
     .ymmods-volume-label { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; pointer-events: none;
       font: 500 11px/14px "YS Text", sans-serif; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.72); }
+    body.ym-light-theme .ymmods-volume-label { color: rgba(0,0,0,.6); }
     html[data-ym-no-volume-percent] .ymmods-volume-label { display: none; }
     #ymmods-volume-toast { position: fixed; z-index: 10000; pointer-events: none; padding: 6px 10px; border-radius: 10px;
       background: var(--ym-background-color-primary-enabled-popover, #1a1a1a); color: var(--ym-controls-color-primary-text-enabled_variant, #e6e6e6);
@@ -245,6 +298,7 @@
     .ymmods-cover-layer { display: none; position: fixed; inset: -40px; z-index: -1; pointer-events: none;
       background: center / cover no-repeat; opacity: 0; transition: opacity 1.2s ease; }
     .ymmods-cover-layer.ymmods-raw { filter: blur(70px) saturate(1.5) brightness(.55); }
+    body.ym-light-theme .ymmods-cover-layer.ymmods-raw { filter: blur(70px) saturate(1.3) brightness(1.1) opacity(.45); }
     html[data-ym-anim="off"] [data-test-id="VIBE_ANIMATION"],
     html[data-ym-anim="focus"][data-ym-unfocused] [data-test-id="VIBE_ANIMATION"] { display: none !important; }`;
   document.head.appendChild(coverStyle);
@@ -255,23 +309,33 @@
   });
   let activeLayer = 0;
   let currentCover = "";
-  const blurredCover = (img) => {
+  // dark pages get a darkened cover, light ones a pale one (My Vibe is dark in the light theme too)
+  const lightPage = () => document.body.classList.contains("ym-light-theme");
+  const blurredCover = (img, light) => {
     const size = 48;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext("2d");
-    ctx.filter = "blur(3px) saturate(1.5) brightness(.55)";
+    ctx.filter = light ? "blur(3px) saturate(1.3) brightness(1.1)" : "blur(3px) saturate(1.5) brightness(.55)";
     ctx.drawImage(img, -6, -6, size + 12, size + 12); // overscan so the blurred edges stay filled
+    if (light) {
+      ctx.filter = "none";
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.fillRect(0, 0, size, size);
+    }
     return canvas.toDataURL("image/png");
   };
-  function setCover(url) {
-    if (!url || url === currentCover) return;
-    currentCover = url;
+  function setCover(coverUrl) {
+    const light = lightPage();
+    const key = coverUrl + (light ? "#light" : "");
+    if (!coverUrl || key === currentCover) return;
+    currentCover = key;
+    const url = coverUrl;
     const small = url.replace(/\/\d+x\d+$/, "/50x50");
     const img = new Image();
     img.crossOrigin = "anonymous";
     const show = (background, raw) => {
-      if (currentCover !== url) return; // a newer track arrived meanwhile
+      if (currentCover !== key) return; // a newer track (or the other theme) arrived meanwhile
       for (const layer of coverLayers) if (!layer.isConnected) document.body.prepend(layer);
       const next = coverLayers[1 - activeLayer];
       next.style.backgroundImage = background;
@@ -281,7 +345,7 @@
       activeLayer = 1 - activeLayer;
     };
     img.onload = () => {
-      try { show(`url("${blurredCover(img)}")`, false); } catch { show(`url("${url}")`, true); } // no CORS: CSS blur fallback
+      try { show(`url("${blurredCover(img, light)}")`, false); } catch { show(`url("${url}")`, true); } // no CORS: CSS blur fallback
     };
     img.onerror = () => show(`url("${url}")`, true);
     img.src = small;
@@ -311,6 +375,7 @@
       liked: like ? like.getAttribute("aria-pressed") === "true" : false,
       volume: vol ? +vol.value : null,
       lang,
+      themeMode: themeMode(),
     };
     try {
       const s = sonata();
@@ -371,7 +436,10 @@
         e.stopPropagation();
         const pb = playback(), st = sonata();
         if (!pb || !st) return;
-        pb.setRepeatMode(st.repeatMode === "none" ? "one" : "none");
+        const next = st.repeatMode === "none" ? "one" : "none";
+        pb.setRepeatMode(next);
+        banner(spriteSvg(next === "one" ? "repeat_one_xs" : "repeat_xs"),
+          appMessage(next === "one" ? "notifications-info.change-repeat-track" : "notifications-info.change-repeat-none", text().repeat[next]));
         setTimeout(updateRepeatButton, 50);
       });
     }
@@ -441,6 +509,17 @@
     });
     template.after(download);
     download.after(mini);
+    // "Then My Vibe" switch, like the player bar button: only while a list (not My Vibe itself) plays
+    if (!isVibePlaying()) {
+      const mode = vibeAfterMode();
+      const vibeAfter = menuItem(template, "vibe-after-item", "navigationMyVibe_xs", t.vibeMode[mode], () => {
+        closeMenus();
+        cycleVibeAfter();
+      });
+      vibeAfter.setAttribute("aria-pressed", String(mode !== "off"));
+      vibeIcon(vibeAfter.querySelector("svg"), mode);
+      mini.after(vibeAfter);
+    }
     // already on the device: shown as done, like the app does in the track menu
     const id = currentEntityId(), service = slam();
     Promise.resolve(service && service.tracksController && id ? service.tracksController.getTrack(id) : null).then((track) => {
@@ -745,7 +824,7 @@
   const accentAnim = document.createElement("style");
   accentAnim.id = "ymmods-accent-anim";
   accentAnim.textContent = ACCENT_VARS.map((v) => `@property ${v}{syntax:"<color>";inherits:true;initial-value:transparent}`).join("") +
-    `body.ym-dark-theme{transition:${ACCENT_VARS.map((v) => v + " .9s ease").join(",")}}`;
+    `body{transition:${ACCENT_VARS.map((v) => v + " .9s ease").join(",")}}`;
   let accentKey = "";
   const updateAccent = (average) => {
     const on = document.documentElement.hasAttribute("data-ym-accent-cover");
@@ -759,7 +838,12 @@
     accentStyle.textContent = `.ym-dark-theme.ym-dark-theme.ym-dark-theme{--ym-controls-color-primary-default-enabled:${a.base};--ym-controls-color-primary-default-hovered:${a.hover};` +
       `--ym-controls-color-primary-default-pressed:${a.pressed};--ym-controls-color-primary-default-focused_stroke:${a.focus};` +
       `--ym-controls-color-primary-outline-hovered_stroke:${a.hover};--ym-controls-color-primary-outline-selected_stroke:${a.base};` +
-      `--ym-controls-color-primary-outline-focused_stroke:${a.focus};--ym-logo-color-primary-variant:${a.base};--ym-logo-color-primary-player:${a.base};--ym-logo-color-primary-text:${a.base}}`;
+      `--ym-controls-color-primary-outline-focused_stroke:${a.focus};--ym-logo-color-primary-variant:${a.base};--ym-logo-color-primary-player:${a.base};--ym-logo-color-primary-text:${a.base}}` +
+      // light theme: the buttons and the logo star take the colour; text and selection stay the app's (black / blue)
+      `.ym-light-theme.ym-light-theme.ym-light-theme{--ym-controls-color-primary-default-enabled:${a.base};--ym-controls-color-primary-default-hovered:${a.hover};` +
+      `--ym-controls-color-primary-default-pressed:${a.pressed};--ym-controls-color-primary-default-focused_stroke:${a.focus};` +
+      `--ym-controls-color-primary-outline-hovered_stroke:${a.hover};--ym-controls-color-primary-outline-focused_stroke:${a.focus};` +
+      `--ym-logo-color-primary-variant:${a.base};--ym-logo-color-primary-player:${a.base}}`;
   };
 
   // ── Auto pause when the audio output device in use disappears (headphones unplugged, Bluetooth off) ──
@@ -843,8 +927,167 @@
     menuTimer = setTimeout(() => { menuTimer = null; checkMenus(); }, 60);
   }).observe(document.documentElement, { childList: true, subtree: true });
 
+  // ── Light / dark: the app's own choice (Yandex ID menu → Appearance), readable and settable from the mod settings ──
+  // localStorage "theme" = light | dark | system; html[data-ym-scheme] = what the user sees outside My Vibe
+  const themeMode = () => { try { return JSON.parse(localStorage.getItem("theme") || "{}").value || "system"; } catch { return "system"; } };
+  const resolvedScheme = () => {
+    const mode = themeMode();
+    if (mode === "light" || mode === "dark") return mode;
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  };
+  // the profile widget's own handler: saves the choice and switches the page, exactly like its menu does
+  const themeHandler = () => {
+    const el = $("USER_PROFILE");
+    const key = el && Object.keys(el).find((k) => k.startsWith("__reactFiber"));
+    const queue = key ? [el[key]] : [];
+    for (let n = 0; queue.length && n < 500; n++) {
+      const f = queue.shift();
+      if (!f) continue;
+      if (f.memoizedProps && typeof f.memoizedProps.onThemeChange === "function") return f.memoizedProps.onThemeChange;
+      queue.push(f.child, f.sibling);
+    }
+    return null;
+  };
+  const markScheme = () => {
+    const scheme = resolvedScheme();
+    if (document.documentElement.getAttribute("data-ym-scheme") !== scheme) document.documentElement.setAttribute("data-ym-scheme", scheme);
+  };
+  window.__ymModsTheme = {
+    get: themeMode,
+    set(mode) {
+      if (!["light", "dark", "system"].includes(mode)) return false;
+      const handler = themeHandler();
+      if (!handler) return false;
+      handler(mode);
+      setTimeout(markScheme, 50);
+      return true;
+    },
+  };
+  // the page switches between light and dark on its own too (My Vibe, the OS theme): the cover is re-made for it
+  new MutationObserver(() => { markScheme(); const s = readState(); if (s.cover) setCover(s.cover); })
+    .observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", markScheme);
+  markScheme();
+
+  // ── "Then My Vibe": My Vibe starts when the list (album / playlist / artist) plays out — a saved setting —
+  //    or, once, when the current track ends. Button in the player bar and an item in the My Vibe "…" menu ──
+  const startMyVibe = () => {
+    const m = findModels();
+    const player = m && m.player;
+    if (!player || typeof player.playContext !== "function") return Promise.reject(new Error("no player"));
+    // the same request the My Vibe screen sends for the default vibe
+    return player.playContext({
+      contextData: { type: "vibe", meta: { id: "user:onyourwave" }, seeds: ["user:onyourwave"],
+        from: "desktop-wave_landing_screen-my_wave-radio-default", includeTracksInResponse: true, interactive: true },
+      loadContextMeta: true,
+    });
+  };
+  const isVibePlaying = () => { const s = sonata(); return !s || s.contextType === "vibe" || !!s.isVibeContext || !!s.isGenerativeContext; };
+  let vibeAfterTrack = ""; // "after this track": the id of that track (not saved: it is about the current listening only)
+  const currentTrackId = () => { const s = sonata(); return s && s.entityMeta ? String(s.entityMeta.id) : ""; };
+  const vibeAfterMode = () => {
+    if (vibeAfterTrack && vibeAfterTrack === currentTrackId()) return "track";
+    return document.documentElement.hasAttribute("data-ym-vibe-after") ? "list" : "off";
+  };
+  // off → after the list → after this track → off (like repeat: off → all → one)
+  function cycleVibeAfter() {
+    const mode = vibeAfterMode();
+    const next = mode === "off" ? "list" : mode === "list" ? "track" : "off";
+    vibeAfterTrack = next === "track" ? currentTrackId() : "";
+    vibeAfterLeft = Infinity;
+    const list = next === "list" || (next === "track" && document.documentElement.hasAttribute("data-ym-vibe-after"));
+    if (list !== document.documentElement.hasAttribute("data-ym-vibe-after")) {
+      document.documentElement.toggleAttribute("data-ym-vibe-after", list);
+      if (window.ymMods) window.ymMods.setConfig({ vibeAfterQueue: list });
+    }
+    banner(vibeIconSvg(next), text().vibeMode[next]);
+    updateVibeAfterButton();
+  }
+  let vibeAfterFired = "";
+  let vibeAfterLeft = Infinity; // seconds that were left of the "after this track" track at the last check
+  const fireVibeAfter = (why, key) => {
+    if (vibeAfterFired === key) return;
+    vibeAfterFired = key;
+    vibeAfterTrack = "";
+    banner(vibeIconSvg("list"), text().vibeStart[why]);
+    startMyVibe().catch(() => {});
+  };
+  const checkVibeAfter = () => {
+    const s = sonata();
+    if (!s || isVibePlaying()) return;
+    const id = currentTrackId();
+    const key = `${s.contextType}:${s.contextId}:${id}`;
+    // after this track: at its end, or right after the list moved on by itself (the position updates too rarely
+    // to always catch the last second); a switch far from the end is the user's own: that cancels the mode
+    if (vibeAfterTrack && vibeAfterTrack === id) {
+      const left = (s.duration || 0) - (s.position || 0);
+      vibeAfterLeft = s.duration > 0 ? left : Infinity;
+      if (s.status === "ended" || (s.status === "playing" && s.duration > 0 && left <= 0.6)) fireVibeAfter("track", key);
+      return;
+    }
+    if (vibeAfterTrack && vibeAfterTrack !== id) {
+      if (vibeAfterLeft <= 3) { fireVibeAfter("track", key); return; }
+      vibeAfterTrack = "";
+    }
+    // after the list: the last track has ended and nothing comes next (repeat off)
+    if (!document.documentElement.hasAttribute("data-ym-vibe-after")) return;
+    if (s.status !== "ended" || s.canMoveForward || s.repeatMode !== "none") return;
+    fireVibeAfter("list", key);
+  };
+  // the end of a track needs a finer check than the state tick
+  setInterval(() => { if (vibeAfterTrack) checkVibeAfter(); }, 200);
+  // The icon: the app's My Vibe star, like repeat / repeat one: after the list = the star in the accent colour,
+  // after this track = a corner cut out of it with a 1 drawn there
+  const VIBE_STAR = "M23.781 9.35725L23.7157 8.8734L19.7701 7.94806L21.8082 4.90962L21.5673 4.58021L18.3891 6.14249L18.7401 1.89305L18.3891 1.71809L16.4163 5.12968L14.0939 0H13.6558L14.2245 5.02033L8.41633 0.374509L7.91293 0.50709L12.3837 6.14249L3.50748 3.17102L3.09116 3.63301L11.0245 8.14625L0.110204 9.07159L0 9.73176L11.3537 10.9646L1.86395 18.7596L2.30204 19.3542L13.5456 13.1885L11.332 24H12.0109L16.351 13.8281L18.9809 21.7762L19.4408 21.4235L18.4544 13.4536L22.4653 18.0106L22.7075 17.5486L19.7265 11.9118L23.9565 13.4099L24 12.9465L20.4721 10.1063L23.781 9.35725Z";
+  const VIBE_ONE = '<path d="M16.6 16.4l2.2-1.6v7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  let maskSeq = 0;
+  const vibeIconInner = (mode) => {
+    if (mode !== "track") return `<path d="${VIBE_STAR}" fill="currentColor"/>`;
+    const id = "ymmods-vibe-cut-" + ++maskSeq; // own id per icon: a removed copy must not take the mask with it
+    return `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/>` +
+      '<rect x="12.6" y="12.6" width="12" height="12" rx="3.5" fill="#000"/></mask></defs>' +
+      `<path d="${VIBE_STAR}" fill="currentColor" mask="url(#${id})"/>${VIBE_ONE}`;
+  };
+  const vibeIconSvg = (mode) => `<svg viewBox="0 0 24 24" width="24" height="24">${vibeIconInner(mode)}</svg>`;
+  const vibeIcon = (svg, mode) => {
+    if (!svg || svg.getAttribute("data-ymmods-mode") === mode) return;
+    svg.setAttribute("data-ymmods-mode", mode);
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.innerHTML = vibeIconInner(mode);
+  };
+  const updateVibeAfterButton = () => {
+    // right group of the player bar, before the play queue ("what plays next"): the centre controls keep their symmetry
+    const queue = $("PLAYERBAR_DESKTOP_PLAY_QUEUE_BUTTON");
+    let btn = document.querySelector('[data-ymmods="vibe-after"]');
+    if (!queue || isVibePlaying()) { if (btn) btn.remove(); return; }
+    if (!btn) {
+      btn = queue.cloneNode(true);
+      for (const a of ["data-test-id", "aria-live", "aria-busy", "aria-expanded", "aria-haspopup"]) btn.removeAttribute(a);
+      btn.setAttribute("data-ymmods", "vibe-after");
+      btn.classList.remove(...[...btn.classList].filter((c) => /active|selected/i.test(c)));
+      btn.addEventListener("click", (e) => { e.stopPropagation(); cycleVibeAfter(); });
+    }
+    if (btn.nextElementSibling !== queue) queue.before(btn);
+    if (btn.disabled) btn.disabled = false;
+    btn.removeAttribute("data-disabled");
+    const mode = vibeAfterMode();
+    vibeIcon(btn.querySelector("svg"), mode);
+    btn.setAttribute("aria-pressed", String(mode !== "off"));
+    btn.setAttribute("aria-label", text().vibeMode[mode]);
+    btn.title = text().vibeMode[mode];
+  };
+  const vibeAfterStyle = document.createElement("style");
+  vibeAfterStyle.textContent = `[data-ymmods="vibe-after"] { position: relative; }
+    [data-ymmods="vibe-after"][aria-pressed="true"] { color: var(--ym-controls-color-primary-default-enabled) !important; }
+    [data-ymmods="vibe-after"] svg { width: 20px; height: 20px; }
+    [data-ymmods="vibe-after-item"][aria-pressed="true"] svg { color: var(--ym-controls-color-primary-default-enabled) !important; }`;
+  document.head.appendChild(vibeAfterStyle);
+
   const tick = () => {
     const s = readState();
+    markScheme();
+    checkVibeAfter();
+    updateVibeAfterButton();
     updateBadge(s);
     checkMenus();
     updateRepeatButton();

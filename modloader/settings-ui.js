@@ -22,6 +22,9 @@
       hidePlusPromo: ["Скрыть промо Плюса", "Значок и ссылка Плюса в профиле, рекламные баннеры подписки"],
       showVolumePercent: ["Громкость в процентах", "Показывать значение при изменении и при наведении на регулятор"],
       theme: ["Тема", "Оформление поверх стандартного"],
+      scheme: ["Светлая или тёмная", "То же, что «Внешний вид» в меню профиля. Темы мода работают в обеих"],
+      schemes: { light: "Светлая", dark: "Тёмная", system: "Как в системе" },
+      vibeAfterQueue: ["Моя волна после списка", "Когда альбом или плейлист доиграл, включается Моя волна. Кнопка со звездой в плеере переключает: выкл → после списка → после этого трека"],
       themes: { default: "Стандартная", amoled: "AMOLED", glass: "Стекло", contrast: "Контраст", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Производительность",
       vibeAnimation: ["Анимация «Моей волны»", "Главная нагрузка на видеокарту. «В фокусе» — анимация замирает, когда вы в другом окне"],
@@ -138,6 +141,9 @@
       hidePlusPromo: ["Hide Plus promo", "Plus badge and link in the profile, subscription banners"],
       showVolumePercent: ["Volume in percent", "Show the value on change and when hovering the volume control"],
       theme: ["Theme", "Styling on top of the standard look"],
+      scheme: ["Light or dark", "Same as Appearance in the profile menu. The mod's themes work in both"],
+      schemes: { light: "Light", dark: "Dark", system: "System" },
+      vibeAfterQueue: ["My Vibe after the list", "When an album or playlist has played out, My Vibe starts. The star button in the player switches: off → after the list → after this track"],
       themes: { default: "Standard", amoled: "AMOLED", glass: "Glass", contrast: "Contrast", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Performance",
       vibeAnimation: ["My Vibe animation", "The main GPU load. \"When focused\" stops it while you are in another window"],
@@ -254,6 +260,9 @@
       hidePlusPromo: ["Плюс промосын жасыру", "Профильдегі Плюс белгісі мен сілтемесі, жазылым баннерлері"],
       showVolumePercent: ["Дыбыс деңгейі пайызбен", "Өзгергенде және реттегішке меңзегенде мәнін көрсету"],
       theme: ["Тақырып", "Стандартты безендіру үстінен"],
+      scheme: ["Ашық немесе қараңғы", "Профиль мәзіріндегі «Сыртқы түр» сияқты. Мод тақырыптары екеуінде де жұмыс істейді"],
+      schemes: { light: "Ашық", dark: "Қараңғы", system: "Жүйедегідей" },
+      vibeAfterQueue: ["Тізімнен кейін Менің толқыным", "Альбом немесе плейлист аяқталғанда Менің толқыным қосылады. Ойнатқыштағы жұлдыз түймесі ауыстырады: өшірулі → тізімнен кейін → осы тректен кейін"],
       themes: { default: "Стандартты", amoled: "AMOLED", glass: "Шыны", contrast: "Контраст", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Өнімділік",
       vibeAnimation: ["«Менің толқыным» анимациясы", "Бейнекартаға негізгі жүктеме. «Фокуста» — басқа терезеде болғанда анимация тоқтайды"],
@@ -370,6 +379,9 @@
       hidePlusPromo: ["Plus promosini yashirish", "Profildagi Plus belgisi va havolasi, obuna bannerlari"],
       showVolumePercent: ["Ovoz balandligi foizda", "O‘zgarganda va boshqaruvchi ustiga kursor olib kelinganda qiymatni ko‘rsatish"],
       theme: ["Mavzu", "Standart ko‘rinish ustidan bezak"],
+      scheme: ["Yorug‘ yoki qorong‘i", "Profil menyusidagi «Tashqi ko‘rinish» bilan bir xil. Mod mavzulari ikkalasida ham ishlaydi"],
+      schemes: { light: "Yorug‘", dark: "Qorong‘i", system: "Tizimdagidek" },
+      vibeAfterQueue: ["Ro‘yxatdan keyin Mening to‘lqinim", "Albom yoki pleylist tugaganda Mening to‘lqinim yoqiladi. Pleyerdagi yulduz tugmasi almashtiradi: o‘chiq → ro‘yxatdan keyin → shu trekdan keyin"],
       themes: { default: "Standart", amoled: "AMOLED", glass: "Shisha", contrast: "Kontrast", mica: "Mica", acrylic: "Acrylic" },
       groupPerf: "Unumdorlik",
       vibeAnimation: ["«Mening to‘lqinim» animatsiyasi", "Videokartaga asosiy yuklama. «Fokusda» — boshqa oynada bo‘lganingizda animatsiya to‘xtaydi"],
@@ -733,6 +745,7 @@
     ul.appendChild(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
     addToggles(["miniPlayerOnTop", "miniPlayerLarge", ...(isWin ? ["thumbarButtons"] : []), "showQuality", "playlistSearch"]);
     addToggles(["autoPauseLock", "autoResumeUnlock", "autoPauseHeadphones"]);
+    addToggles(["vibeAfterQueue"]);
 
     const sleepDesc = (info) => (info && info.mode === "minutes" ? t.sleepActiveMin(info.minutesLeft) : info && info.mode === "track" ? t.sleepActiveTrack : t.sleep[1]);
     const sleepValue = (info) => (!info || info.mode === "off" ? "off" : info.mode === "track" ? "track" : "active");
@@ -806,6 +819,12 @@
     const shownTheme = !state.materials && isMaterial(cfg.theme) ? "default" : cfg.theme || "default";
     const themeChips = makeChips(Object.entries(t.themes).filter(([k]) => state.materials || !isMaterial(k)), shownTheme, (value) => window.ymMods.setConfig({ theme: value }));
     ul.appendChild(makeRow(t.theme[0], state.materials ? t.theme[1] + ". " + t.materialNote : t.theme[1], themeChips).li);
+    // the app's own light / dark choice, set through its profile widget (features.js)
+    const theme = window.__ymModsTheme;
+    if (theme) {
+      const schemeChips = makeChips(Object.entries(t.schemes), theme.get(), (value) => { theme.set(value); });
+      ul.appendChild(makeRow(t.scheme[0], t.scheme[1], schemeChips).li);
+    }
     addToggles(["accentFromCover"]);
     const zoomValues = [0.9, 1, 1.1, 1.25, 1.5];
     const zoomNow = zoomValues.find((z) => Math.abs(z - (cfg.zoomFactor || 1)) < 0.001);

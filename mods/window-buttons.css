@@ -58,3 +58,9 @@ html[data-ym-maximized] [class*="TitleBar_button"]:nth-child(2) {
   background: var(--ym-controls-color-accent-default-enabled, #d5594d) !important;
   color: #fff !important;
 }
+
+/* Светлая тема (кроме страницы «Моя волна» — она всегда тёмная) */
+body.ym-light-theme [class*="TitleBar_button"] { color: rgba(0, 0, 0, .5) !important; }
+body.ym-light-theme [class*="TitleBar_button"]:hover { color: rgba(0, 0, 0, .88) !important; background: rgba(0, 0, 0, .06) !important; }
+body.ym-light-theme [class*="TitleBar_button"]:active { background: rgba(0, 0, 0, .12) !important; }
+body.ym-light-theme [class*="TitleBar_closeButton"]:hover { color: #fff !important; background: var(--ym-controls-color-accent-default-enabled, #d5594d) !important; }
