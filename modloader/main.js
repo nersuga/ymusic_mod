@@ -94,6 +94,9 @@ module.exports = ({ appRequire, appDir } = {}) => {
     modUpdateNotified: "", // the version the "update available" notice was shown for
     modLastVersion: "", // mod version seen at the last start: a change means the mod was just updated
     accentFromCover: false, // the app's yellow accent follows the average colour of the cover
+    waveAccent: false, // the My Vibe animation takes the accent colour (the yellow one or the one from the cover)
+    waveReact: "lively", // how the My Vibe wave follows the music: app (the app's own analyser) | lively | max
+    trackVideo: true, // a short looped excerpt of the track's clip over the cover, like the mobile app
     vibeAfterQueue: false, // when an album / playlist ends, My Vibe starts (the button in the player bar)
     autoPauseLock: false, // pause when the computer is locked
     autoResumeUnlock: true, // …and play again after unlocking (only if the mod paused it)
@@ -361,6 +364,10 @@ module.exports = ({ appRequire, appDir } = {}) => {
       "--ym-controls-color-secondary-outline-enabled_stroke:rgba(0,0,0,.6);--ym-controls-color-primary-outline-enabled:#b3b3b3;" +
       "--ym-outline-color-primary-disabled:rgba(0,0,0,.22)}",
   };
+  // Themes with a see-through page (the blurred cover / the Windows 11 material behind it): the My Vibe wave is
+  // created transparent there (the hook is in preload.js), else its own dark backdrop shows as black edges
+  const effectiveTheme = (cfg) => ((cfg.theme === "mica" || cfg.theme === "acrylic") && !materialSupported() ? "default" : cfg.theme);
+  const vibeTransparent = (cfg) => ["glass", "mica", "acrylic"].includes(effectiveTheme(cfg));
   const featureCssKeys = new WeakMap();
   const applyFeatureCss = (wc) => {
     if (!isAppContents(wc)) return;
@@ -372,14 +379,18 @@ module.exports = ({ appRequire, appDir } = {}) => {
     if (cfg.hidePlusPromo) css += '[data-test-id="USER_PROFILE_PLUS_BADGE"],[data-test-id="USER_PROFILE_PLUS_LINK"],[class*="WithTopBanner_banner"],[class*="PlusOffer"],[class*="plusOffer"]{display:none!important}';
     // Mica / Acrylic only exist on Windows 11: elsewhere (Linux, macOS, Windows 10, settings imported from another
     // computer) their transparent page would sit on an opaque window, so the default look is used instead
-    const theme = (cfg.theme === "mica" || cfg.theme === "acrylic") && !materialSupported() ? "default" : cfg.theme;
+    const theme = effectiveTheme(cfg);
     if (THEME_CSS[theme]) css += THEME_CSS[theme];
     wc.executeJavaScript(`document.documentElement.toggleAttribute("data-ym-no-volume-percent", ${!cfg.showVolumePercent});` +
       `document.documentElement.toggleAttribute("data-ym-no-quality", ${!cfg.showQuality});` +
       `document.documentElement.toggleAttribute("data-ym-accent-cover", ${!!cfg.accentFromCover});` +
+      `document.documentElement.toggleAttribute("data-ym-wave-accent", ${!!cfg.waveAccent});` +
+      `document.documentElement.toggleAttribute("data-ym-track-video", ${!!cfg.trackVideo});` +
       `document.documentElement.toggleAttribute("data-ym-autopause-headphones", ${!!cfg.autoPauseHeadphones});` +
       `document.documentElement.toggleAttribute("data-ym-no-plsearch", ${!cfg.playlistSearch});` +
       `document.documentElement.toggleAttribute("data-ym-vibe-after", ${!!cfg.vibeAfterQueue});` +
+      `window.__ymModsTransparentVibe = ${vibeTransparent(cfg)};` +
+      `document.documentElement.setAttribute("data-ym-wave-react", ${JSON.stringify(cfg.waveReact)});` +
       `document.documentElement.setAttribute("data-ym-anim", ${JSON.stringify(cfg.vibeAnimation)})`).catch(() => {});
     const prev = featureCssKeys.get(wc);
     if (prev) wc.removeInsertedCSS(prev).catch(() => {});
@@ -455,7 +466,7 @@ module.exports = ({ appRequire, appDir } = {}) => {
   const isModFile = (name) => typeof name === "string" && name === path.basename(name) && /\.(css|js)$/.test(name);
   ipcMain.on("ymmods:flags", (event) => {
     // The wheel stays endless like in the app; with the custom wheel (only chosen tiles) each tile appears once
-    try { event.returnValue = { wheelNoLoop: !!config().wheelFilter }; } catch { event.returnValue = {}; }
+    try { const cfg = config(); event.returnValue = { wheelNoLoop: !!cfg.wheelFilter, vibeTransparent: vibeTransparent(cfg) }; } catch { event.returnValue = {}; }
   });
   ipcMain.handle("ymmods:get", (event) => {
     if (!own(event)) return null;
@@ -480,6 +491,8 @@ module.exports = ({ appRequire, appDir } = {}) => {
         if (Number.isInteger(value) && value >= 1024 && value <= 65535) cfg.localApiPort = value;
       } else if (key === "vibeAnimation") {
         if (["on", "focus", "off"].includes(value)) cfg.vibeAnimation = value;
+      } else if (key === "waveReact") {
+        if (["app", "lively", "max"].includes(value)) cfg.waveReact = value;
       } else if (PROTECTED_KEYS.has(key)) {
         continue;
       } else if (key === "zoomFactor") {
@@ -1081,13 +1094,72 @@ module.exports = ({ appRequire, appDir } = {}) => {
     const cfg = config();
     const sessionDir = app.getPath("sessionData");
     const custom = path.resolve(sessionDir).toLowerCase() !== path.resolve(app.getPath("userData")).toLowerCase();
-    return { ...(await storage.info(sessionDir, custom)), pending: cfg.downloadsMove, lastMove: cfg.downloadsMoveResult };
+    const info = await storage.info(sessionDir, custom);
+    info.cacheBytes += videoCacheFiles().reduce((n, x) => n + x.size, 0); // the background videos count as cache too
+    return { ...info, pending: cfg.downloadsMove, lastMove: cfg.downloadsMoveResult };
+  });
+  // ── Track background videos kept on disk (%APPDATA%\YandexMusic\ymmods-cache\video). The page cannot download
+  //    them itself (no CORS on the video server): it asks here and gets the bytes. Only https files from Yandex hosts,
+  //    video only, up to 40 MB each; the least recently used ones go past 1 GB in all (a video is ~10–15 MB) ──
+  const videoCacheDir = path.join(app.getPath("userData"), "ymmods-cache", "video");
+  const VIDEO_CACHE_MAX = 1024 * 1024 * 1024;
+  const videoUrlOk = (u) => {
+    try { const x = new URL(u); return x.protocol === "https:" && /(^|\.)yandex\.(ru|net)$/.test(x.hostname); } catch { return false; }
+  };
+  const videoFileOf = (u) => path.join(videoCacheDir, require("crypto").createHash("sha1").update(u).digest("hex") + ".mp4");
+  const videoJobs = new Map();
+  const videoCacheFiles = () => {
+    try {
+      return fs.readdirSync(videoCacheDir).filter((n) => n.endsWith(".mp4"))
+        .map((n) => { const f = path.join(videoCacheDir, n); try { const st = fs.statSync(f); return { f, size: st.size, used: st.mtimeMs }; } catch { return null; } })
+        .filter(Boolean);
+    } catch { return []; }
+  };
+  const trimVideoCache = () => {
+    const files = videoCacheFiles().sort((a, b) => a.used - b.used);
+    let total = files.reduce((n, x) => n + x.size, 0);
+    for (const x of files) {
+      if (total <= VIDEO_CACHE_MAX) break;
+      try { fs.unlinkSync(x.f); total -= x.size; } catch {}
+    }
+  };
+  const cacheVideo = (u) => {
+    const file = videoFileOf(u);
+    if (fs.existsSync(file)) {
+      const now = new Date();
+      fs.utimes(file, now, now, () => {}); // last use, for the LRU trim
+      return Promise.resolve(file);
+    }
+    if (videoJobs.has(u)) return videoJobs.get(u);
+    const job = (async () => {
+      const res = await electron.net.fetch(u);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (!/^video\//.test(res.headers.get("content-type") || "")) throw new Error("not a video");
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (!buf.length || buf.length > 40 * 1024 * 1024) throw new Error("bad size " + buf.length);
+      await fs.promises.mkdir(videoCacheDir, { recursive: true });
+      const tmp = file + ".part";
+      await fs.promises.writeFile(tmp, buf);
+      await fs.promises.rename(tmp, file);
+      trimVideoCache();
+      return file;
+    })().finally(() => videoJobs.delete(u));
+    videoJobs.set(u, job);
+    return job;
+  };
+  ipcMain.handle("ymmods:video", async (event, u, wantBytes) => {
+    if (!own(event) || typeof u !== "string" || !videoUrlOk(u)) return null;
+    try {
+      const file = await cacheVideo(u);
+      return wantBytes ? await fs.promises.readFile(file) : true;
+    } catch (e) { log.error("video cache", u, e.message); return null; }
   });
   ipcMain.handle("ymmods:clear-cache", async (event) => {
     if (!own(event)) return false;
     // HTTP and compiled-code caches only: downloaded tracks and the login stay
     await event.sender.session.clearCache();
     await event.sender.session.clearCodeCaches({}).catch(() => {});
+    await fs.promises.rm(videoCacheDir, { recursive: true, force: true }).catch(() => {});
     log.info("cache cleared");
     return true;
   });

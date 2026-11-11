@@ -61,6 +61,17 @@
       playlist: "Плейлист",
       artistTile: "Артист",
       accentFromCover: ["Цвет акцента по обложке", "Жёлтые кнопки и переключатели перекрашиваются в цвет обложки текущего трека"],
+      tabs: { player: "Плеер", hotkeys: "Горячие клавиши", look: "Внешний вид", vibe: "Моя волна", integrations: "Интеграции", system: "Система", files: "Файлы модов" },
+      searchMods: "Поиск по настройкам мода",
+      nothingFound: "Ничего не нашлось",
+      jumpToMods: "Настройки мода ↓",
+      waveAccent: ["Волна в цвет акцента", "Анимация «Моей волны» окрашивается в акцентный цвет — жёлтый или цвет обложки, если включён акцент по обложке"],
+      waveReact: ["Реакция волны на музыку", "«Живая» и «Максимум» слушают трек точнее, чем приложение: отдельно бас, середину и верха, и выделяют удары"],
+      waveReactModes: { app: "Как в приложении", lively: "Живая", max: "Максимум" },
+      trackVideo: ["Видео трека", "Как в мобильном приложении: если у трека есть фоновое видео, оно без звука крутится на фоне «Моей волны» и полноэкранного плеера, а в списках у названия появляется значок ▶"],
+      subPause: "Пауза и таймер",
+      subTray: "Трей и память",
+      subApp: "Приложение",
       materialNote: "Mica и Acrylic — прозрачность окна Windows 11: сквозь окно размыт рабочий стол",
       autoPauseLock: ["Пауза при блокировке компьютера", "Win + L или блокировка по таймеру ставят музыку на паузу"],
       autoResumeUnlock: ["Продолжать после разблокировки", "Если на паузу поставил мод, после входа музыка продолжится"],
@@ -90,7 +101,7 @@
       miniPlayerOnTop: ["Мини-плеер поверх окон", "Также переключается булавкой в самом мини-плеере"],
       miniPlayerLarge: ["Крупный мини-плеер", "Карточка с большой обложкой и прогрессом трека вместо компактной полоски"],
       thumbarButtons: ["Кнопки в панели задач", "Назад, пауза и вперёд под превью окна при наведении на значок в панели задач"],
-      showQuality: ["Качество трека", "Кодек и битрейт играющего файла в панели плеера"],
+      showQuality: ["Качество трека", "Кодек и битрейт играющего файла в панели плеера. Нажмите на него — откроется список форматов от лучшего к худшему"],
       playlistSearch: ["Поиск в «Добавить в плейлист»", "Поле поиска в меню выбора плейлиста, если плейлистов много"],
       zoom: ["Масштаб интерфейса", "Также Ctrl + = / Ctrl + − / Ctrl + 0"],
       groupStorage: "Хранилище",
@@ -105,7 +116,7 @@
       downloadsInside: "Нельзя переносить внутрь папки приложения",
       downloadsFailed: (e) => `Прошлый перенос не удался: ${e}`,
       relaunch: "Перезапустить сейчас",
-      cache: ["Кеш", (size) => `${size} — картинки, страницы и код. Скачанные треки и вход не затрагиваются`],
+      cache: ["Кеш", (size) => `${size} — картинки, страницы, код и фоновые видео треков. Скачанные треки и вход не затрагиваются`],
       cacheClear: "Очистить",
       cacheCleared: "Кеш очищен",
       groupIntegrations: "Интеграции",
@@ -180,6 +191,17 @@
       playlist: "Playlist",
       artistTile: "Artist",
       accentFromCover: ["Accent from the cover", "Yellow buttons and switches take the colour of the current track's cover"],
+      tabs: { player: "Player", hotkeys: "Hotkeys", look: "Appearance", vibe: "My Vibe", integrations: "Integrations", system: "System", files: "Mod files" },
+      searchMods: "Search mod settings",
+      nothingFound: "Nothing found",
+      jumpToMods: "Mod settings ↓",
+      waveAccent: ["Wave in the accent colour", "The My Vibe animation takes the accent colour — the yellow one, or the cover's when the accent from the cover is on"],
+      waveReact: ["Wave reaction to the music", "“Lively” and “Max” listen to the track closer than the app does: bass, middle and highs apart, with the hits brought out"],
+      waveReactModes: { app: "As in the app", lively: "Lively", max: "Max" },
+      trackVideo: ["Track video", "Like the mobile app: when a track has a background video, it loops muted behind My Vibe and the full screen player, and lists show a ▶ mark next to its title"],
+      subPause: "Pause and timer",
+      subTray: "Tray and memory",
+      subApp: "App",
       materialNote: "Mica and Acrylic are Windows 11 window transparency: the desktop is blurred through the window",
       autoPauseLock: ["Pause when the computer is locked", "Win + L or a timeout lock pauses the music"],
       autoResumeUnlock: ["Resume after unlocking", "If the mod paused it, music continues after you sign back in"],
@@ -209,7 +231,7 @@
       miniPlayerOnTop: ["Mini player on top", "Also toggled by the pin in the mini player itself"],
       miniPlayerLarge: ["Large mini player", "A card with a big cover and track progress instead of the compact bar"],
       thumbarButtons: ["Taskbar buttons", "Previous, pause and next under the window preview of the taskbar icon"],
-      showQuality: ["Track quality", "Codec and bitrate of the playing file in the player bar"],
+      showQuality: ["Track quality", "Codec and bitrate of the playing file in the player bar. Click it to see all formats from best to worst"],
       playlistSearch: ["Search in “Add to playlist”", "A search field in the playlist menu when there are many playlists"],
       zoom: ["Interface zoom", "Also Ctrl + = / Ctrl + − / Ctrl + 0"],
       groupStorage: "Storage",
@@ -224,7 +246,7 @@
       downloadsInside: "Cannot move into the app's own folder",
       downloadsFailed: (e) => `The last move failed: ${e}`,
       relaunch: "Restart now",
-      cache: ["Cache", (size) => `${size} — images, pages and code. Downloaded tracks and the login stay`],
+      cache: ["Cache", (size) => `${size} — images, pages, code and track background videos. Downloaded tracks and the login stay`],
       cacheClear: "Clear",
       cacheCleared: "Cache cleared",
       groupIntegrations: "Integrations",
@@ -299,6 +321,17 @@
       playlist: "Плейлист",
       artistTile: "Әртіс",
       accentFromCover: ["Акцент түсі мұқабадан", "Сары түймелер мен ауыстырғыштар ағымдағы трек мұқабасының түсіне боялады"],
+      tabs: { player: "Ойнатқыш", hotkeys: "Жылдам пернелер", look: "Сыртқы түрі", vibe: "Менің толқыным", integrations: "Интеграциялар", system: "Жүйе", files: "Мод файлдары" },
+      searchMods: "Мод баптауларынан іздеу",
+      nothingFound: "Ештеңе табылмады",
+      jumpToMods: "Мод баптаулары ↓",
+      waveAccent: ["Толқын акцент түсінде", "«Менің толқыным» анимациясы акцент түсіне боялады — сары немесе мұқабадан акцент қосулы болса, мұқаба түсі"],
+      waveReact: ["Толқынның музыкаға әсерленуі", "«Тірі» және «Максимум» тректі қолданбадан дәлірек тыңдайды: басты, ортаны және жоғарыны бөлек, соққыларды айқындайды"],
+      waveReactModes: { app: "Қолданбадағыдай", lively: "Тірі", max: "Максимум" },
+      trackVideo: ["Трек бейнесі", "Мобильді қолданбадағыдай: тректің фондық бейнесі болса, ол «Менің толқыным» мен толық экранды ойнатқыштың фонында дыбыссыз ойнайды, ал тізімдерде атауының жанында ▶ белгісі шығады"],
+      subPause: "Кідірту және таймер",
+      subTray: "Науа және жад",
+      subApp: "Қолданба",
       materialNote: "Mica және Acrylic — Windows 11 терезе мөлдірлігі: терезе арқылы жұмыс үстелі бұлдырап көрінеді",
       autoPauseLock: ["Компьютер құлыпталғанда кідірту", "Win + L немесе таймер бойынша құлыптау музыканы кідіртеді"],
       autoResumeUnlock: ["Құлып ашылғаннан кейін жалғастыру", "Егер мод кідірткен болса, кіргеннен кейін музыка жалғасады"],
@@ -328,7 +361,7 @@
       miniPlayerOnTop: ["Шағын ойнатқыш терезелердің үстінде", "Шағын ойнатқыштағы түйреуішпен де ауыстырылады"],
       miniPlayerLarge: ["Үлкен шағын ойнатқыш", "Шағын жолақтың орнына үлкен мұқабасы мен трек барысы бар карта"],
       thumbarButtons: ["Тапсырмалар тақтасындағы түймелер", "Тапсырмалар тақтасындағы белгішенің алдын ала көрінісінде: артқа, кідірту, алға"],
-      showQuality: ["Трек сапасы", "Ойнатқыш тақтасында ойнап тұрған файлдың кодегі мен битрейті"],
+      showQuality: ["Трек сапасы", "Ойнатқыш тақтасында ойнап тұрған файлдың кодегі мен битрейті. Басыңыз — форматтар тізімі ең жақсысынан ең нашарына дейін ашылады"],
       playlistSearch: ["«Плейлистке қосу» ішінде іздеу", "Плейлистер көп болса, таңдау мәзірінде іздеу өрісі"],
       zoom: ["Интерфейс масштабы", "Сондай-ақ Ctrl + = / Ctrl + − / Ctrl + 0"],
       groupStorage: "Жад",
@@ -343,7 +376,7 @@
       downloadsInside: "Қолданбаның өз қалтасына көшіруге болмайды",
       downloadsFailed: (e) => `Алдыңғы көшіру сәтсіз аяқталды: ${e}`,
       relaunch: "Қазір қайта іске қосу",
-      cache: ["Кэш", (size) => `${size} — суреттер, беттер және код. Жүктелген тректер мен кіру сақталады`],
+      cache: ["Кэш", (size) => `${size} — суреттер, беттер, код және тректердің фондық бейнелері. Жүктелген тректер мен кіру сақталады`],
       cacheClear: "Тазалау",
       cacheCleared: "Кэш тазаланды",
       groupIntegrations: "Интеграциялар",
@@ -418,6 +451,17 @@
       playlist: "Pleylist",
       artistTile: "Ijrochi",
       accentFromCover: ["Aksent rangi muqovadan", "Sariq tugmalar va almashtirgichlar joriy trek muqovasi rangiga bo‘yaladi"],
+      tabs: { player: "Pleyer", hotkeys: "Tezkor tugmalar", look: "Ko‘rinish", vibe: "Mening to‘lqinim", integrations: "Integratsiyalar", system: "Tizim", files: "Mod fayllari" },
+      searchMods: "Mod sozlamalaridan qidirish",
+      nothingFound: "Hech narsa topilmadi",
+      jumpToMods: "Mod sozlamalari ↓",
+      waveAccent: ["To‘lqin aksent rangida", "«Mening to‘lqinim» animatsiyasi aksent rangiga bo‘yaladi — sariq yoki muqovadan aksent yoqilgan bo‘lsa, muqova rangi"],
+      waveReact: ["To‘lqinning musiqaga javobi", "«Jonli» va «Maksimum» trekni ilovadan aniqroq tinglaydi: bas, o‘rta va yuqorilarni alohida, zarbalarni ajratib"],
+      waveReactModes: { app: "Ilovadagidek", lively: "Jonli", max: "Maksimum" },
+      trackVideo: ["Trek videosi", "Mobil ilovadagidek: trekning fon videosi bo‘lsa, u «Mening to‘lqinim» va to‘liq ekranli pleyer fonida ovozsiz aylanadi, ro‘yxatlarda esa nomi yonida ▶ belgisi chiqadi"],
+      subPause: "Pauza va taymer",
+      subTray: "Trey va xotira",
+      subApp: "Ilova",
       materialNote: "Mica va Acrylic — Windows 11 oyna shaffofligi: oyna orqali ish stoli xira ko‘rinadi",
       autoPauseLock: ["Kompyuter qulflanganda pauza", "Win + L yoki taymer bo‘yicha qulflash musiqani pauza qiladi"],
       autoResumeUnlock: ["Qulf ochilgandan keyin davom ettirish", "Agar pauzani mod qo‘ygan bo‘lsa, kirgandan keyin musiqa davom etadi"],
@@ -447,7 +491,7 @@
       miniPlayerOnTop: ["Mini pleyer oynalar ustida", "Mini pleyerdagi to‘g‘nog‘ich bilan ham almashtiriladi"],
       miniPlayerLarge: ["Katta mini pleyer", "Ixcham chiziq o‘rniga katta muqova va trek jarayoni bilan karta"],
       thumbarButtons: ["Vazifalar panelidagi tugmalar", "Vazifalar panelidagi belgi oldindan ko‘rinishi ostida: orqaga, pauza, oldinga"],
-      showQuality: ["Trek sifati", "Pleyer panelida ijro etilayotgan faylning kodeki va bitreyti"],
+      showQuality: ["Trek sifati", "Pleyer panelida ijro etilayotgan faylning kodeki va bitreyti. Bosing — formatlar ro‘yxati eng yaxshisidan eng yomoniga ochiladi"],
       playlistSearch: ["«Pleylistga qo‘shish»da qidiruv", "Pleylistlar ko‘p bo‘lsa, tanlash menyusida qidiruv maydoni"],
       zoom: ["Interfeys masshtabi", "Shuningdek Ctrl + = / Ctrl + − / Ctrl + 0"],
       groupStorage: "Xotira",
@@ -462,7 +506,7 @@
       downloadsInside: "Ilovaning o‘z papkasiga ko‘chirib bo‘lmaydi",
       downloadsFailed: (e) => `Oldingi ko‘chirish amalga oshmadi: ${e}`,
       relaunch: "Hozir qayta ishga tushirish",
-      cache: ["Kesh", (size) => `${size} — rasmlar, sahifalar va kod. Yuklab olingan treklar va kirish saqlanadi`],
+      cache: ["Kesh", (size) => `${size} — rasmlar, sahifalar, kod va treklarning fon videolari. Yuklab olingan treklar va kirish saqlanadi`],
       cacheClear: "Tozalash",
       cacheCleared: "Kesh tozalandi",
       groupIntegrations: "Integratsiyalar",
@@ -504,7 +548,18 @@
     .ymmods-input:focus{border-color:var(--ym-controls-color-primary-default-enabled,#ff0)}
     .ymmods-input::placeholder{color:rgba(255,255,255,.4)}
     .ymmods-note{color:#ff6b5e!important}
-    .ymmods-ok{color:#8fd694!important}`;
+    .ymmods-ok{color:#8fd694!important}
+    .ymmods-hidden{display:none!important}
+    .ymmods-nav{display:flex!important;flex-direction:column;align-items:stretch!important;gap:10px;padding:4px 0 12px!important;scroll-margin-top:96px}
+    .ymmods-tabs{display:flex;flex-wrap:wrap;gap:6px}
+    .ymmods-search{width:100%;max-width:420px;-webkit-appearance:none}
+    .ymmods-empty{opacity:.6;padding:12px 0!important}
+    #ymmods-jump{margin:0 0 12px}
+    body.ym-light-theme .ymmods-chip{border-color:rgba(0,0,0,.16);color:rgba(0,0,0,.85)}
+    body.ym-light-theme .ymmods-chip:hover{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.3)}
+    body.ym-light-theme .ymmods-chip[aria-pressed="true"]{color:#000}
+    body.ym-light-theme .ymmods-input{border-color:rgba(0,0,0,.16);background:rgba(0,0,0,.03);color:#000}
+    body.ym-light-theme .ymmods-input::placeholder{color:rgba(0,0,0,.4)}`;
   const ensureStyle = () => {
     if (document.getElementById("ymmods-settings-style")) return;
     const s = document.createElement("style");
@@ -694,59 +749,81 @@
     };
     const note = (row, textValue, bad) => { row.ymDesc.textContent = textValue; row.ymDesc.classList.toggle("ymmods-note", !!bad); row.ymDesc.classList.remove("ymmods-ok"); };
     const setToggle = (key) => (v) => window.ymMods.setConfig({ [key]: v });
-    const addToggles = (keys) => { for (const key of keys) ul.appendChild(makeToggle(...t[key], !!cfg[key], setToggle(key))); };
+    // ── Layout: the mod's settings are split into tabs (one shown at a time) with a search over all of them.
+    //    Every row is tagged with its tab; a search shows matching rows from every tab instead ──
+    const TABS = ["player", "hotkeys", "look", "vibe", "integrations", "system", "files"];
+    let curTab = TABS[0];
+    const add = (li) => { li.dataset.ymTab = curTab; ul.appendChild(li); return li; };
+    const tab = (key) => { curTab = key; };
+    // a small heading inside a tab (hidden while searching)
+    const sub = (text) => { const li = add(makeHeader(text, 16)); li.dataset.ymSub = ""; li.querySelector("h3").style.fontSize = "18px"; return li; };
+    const addToggles = (keys) => { for (const key of keys) add(makeToggle(...t[key], !!cfg[key], setToggle(key))); };
 
-    // ── General ──
     ul.appendChild(makeHeader(t.mods));
+    const navLi = document.createElement("li");
+    navLi.className = toggleTpl.className;
+    navLi.classList.add("ymmods-nav");
+    const tabBox = document.createElement("div");
+    tabBox.className = "ymmods-tabs";
+    tabBox.setAttribute("role", "tablist");
+    const search = document.createElement("input");
+    search.className = "ymmods-input ymmods-search";
+    search.type = "search";
+    search.placeholder = t.searchMods;
+    search.spellcheck = false;
+    search.autocomplete = "off";
+    search.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Escape") { search.value = ""; applyFilter(); } });
+    navLi.append(tabBox, search);
+    ul.appendChild(navLi);
+    const emptyLi = document.createElement("li");
+    emptyLi.className = toggleTpl.className;
+    emptyLi.classList.add("ymmods-empty");
+    emptyLi.textContent = t.nothingFound;
+    let activeTab = TABS.includes(localStorage.getItem("ymmods-settings-tab")) ? localStorage.getItem("ymmods-settings-tab") : TABS[0];
+    const tabButtons = {};
+    for (const key of TABS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ymmods-chip";
+      b.setAttribute("role", "tab");
+      b.textContent = t.tabs[key];
+      b.addEventListener("click", () => {
+        activeTab = key;
+        try { localStorage.setItem("ymmods-settings-tab", key); } catch {}
+        search.value = "";
+        applyFilter();
+      });
+      tabButtons[key] = b;
+      tabBox.appendChild(b);
+    }
+    const applyFilter = () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      for (const li of ul.querySelectorAll(":scope > li[data-ym-tab]")) {
+        const show = q ? !("ymSub" in li.dataset) && li.textContent.toLowerCase().includes(q) : li.dataset.ymTab === activeTab;
+        li.classList.toggle("ymmods-hidden", !show);
+        if (show && li.style.display !== "none") shown++;
+      }
+      for (const [key, b] of Object.entries(tabButtons)) b.setAttribute("aria-pressed", String(!q && key === activeTab));
+      emptyLi.classList.toggle("ymmods-hidden", !q || shown > 0);
+    };
+    search.addEventListener("input", applyFilter);
+
     // Windows-only features are not offered elsewhere: memory trimming and the taskbar thumbnail buttons
     const isWin = !state.platform || state.platform === "win32";
-    addToggles(["disableUpdates", "trayUnloadWhenPaused", ...(isWin ? ["trayTrimWhenPlaying"] : [])]);
 
-    // ── Mod updates (GitHub releases) ──
-    ul.appendChild(makeHeader(t.groupModUpdate, 24));
-    const updateBox = chipGroup();
-    const { li: updateRow } = makeRow(t.modVersion, t.modChecking, updateBox);
-    ul.appendChild(updateRow);
-    const renderUpdate = (st, busyText) => {
-      updateBox.textContent = "";
-      if (!st) return;
-      let desc = t.modInstalled(st.installed === "0.0.0" ? "—" : st.installed);
-      let bad = false;
-      if (busyText) desc = busyText;
-      else if (st.error && /no releases/.test(st.error)) desc += " · " + t.modNoRelease;
-      else if (st.error) { desc += " · " + t.failed + ": " + st.error; bad = true; }
-      else if (st.available) desc += " · " + t.modLatest(st.latest);
-      else if (st.latest) desc += " · " + t.modUpToDate;
-      note(updateRow, desc, bad);
-      if (st.available && !st.error) updateRow.ymDesc.classList.add("ymmods-ok");
-      if (busyText) return;
-      updateBox.append(chipButton(t.modCheck, async () => { renderUpdate(st, t.modChecking); renderUpdate(await window.ymMods.modUpdate("check")); }));
-      if (st.available) {
-        const b = chipButton(t.modUpdate(st.latest), async () => {
-          renderUpdate(st, t.modDownloading);
-          const res = await window.ymMods.modUpdate("install");
-          renderUpdate(res, res && res.installing ? t.modInstalling : null);
-        });
-        b.setAttribute("aria-pressed", "true"); // highlighted like a selected chip
-        updateBox.append(b);
-      }
-    };
-    window.ymMods.modUpdate("status").then((st) => (st && !st.checkedAt ? window.ymMods.modUpdate("check") : st)).then((st) => renderUpdate(st));
-    ul.appendChild(makeToggle(...t.modAutoUpdate, !!cfg.modAutoUpdate, setToggle("modAutoUpdate")));
-
-    // ── Player ──
-    ul.appendChild(makeHeader(t.groupPlayer, 24));
-    addToggles(["showVolumePercent"]);
+    // ══ Player ══
+    tab("player");
+    addToggles(["showVolumePercent", "showQuality", "trackVideo", "playlistSearch"]);
     const miniButton = document.createElement("button");
     miniButton.type = "button";
     miniButton.className = "ymmods-chip";
     miniButton.textContent = t.miniPlayerShow;
     miniButton.addEventListener("click", () => window.ymMods.toggleMiniPlayer());
-    ul.appendChild(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
-    addToggles(["miniPlayerOnTop", "miniPlayerLarge", ...(isWin ? ["thumbarButtons"] : []), "showQuality", "playlistSearch"]);
-    addToggles(["autoPauseLock", "autoResumeUnlock", "autoPauseHeadphones"]);
-    addToggles(["vibeAfterQueue"]);
+    add(makeRow(t.miniPlayer[0], t.miniPlayer[1], miniButton).li);
+    addToggles(["miniPlayerOnTop", "miniPlayerLarge", ...(isWin ? ["thumbarButtons"] : [])]);
 
+    sub(t.subPause);
     const sleepDesc = (info) => (info && info.mode === "minutes" ? t.sleepActiveMin(info.minutesLeft) : info && info.mode === "track" ? t.sleepActiveTrack : t.sleep[1]);
     const sleepValue = (info) => (!info || info.mode === "off" ? "off" : info.mode === "track" ? "track" : "active");
     const sleepChips = makeChips(
@@ -759,7 +836,7 @@
         sleepRow.ymDesc.textContent = sleepDesc(info);
       });
     const { li: sleepRow } = makeRow(t.sleep[0], sleepDesc(state.sleep), sleepChips);
-    ul.appendChild(sleepRow);
+    add(sleepRow);
     // keep the countdown fresh while the page is open
     const sleepTimer = setInterval(async () => {
       if (!sleepRow.isConnected) return clearInterval(sleepTimer);
@@ -767,8 +844,11 @@
       sleepRow.ymDesc.textContent = sleepDesc(info);
       if (info && info.mode === "off") sleepChips.querySelectorAll(".ymmods-chip").forEach((c, i, all) => c.setAttribute("aria-pressed", String(i === all.length - 1)));
     }, 15000);
+    addToggles(["autoPauseLock", "autoResumeUnlock", "autoPauseHeadphones"]);
 
-    ul.appendChild(makeToggle(...t.hotkeysEnabled, !!cfg.hotkeysEnabled, setToggle("hotkeysEnabled")));
+    // ══ Hotkeys ══
+    tab("hotkeys");
+    add(makeToggle(...t.hotkeysEnabled, !!cfg.hotkeysEnabled, setToggle("hotkeysEnabled")));
     let hotkeyStatus = state.hotkeyStatus || {};
     const hotkeys = { ...cfg.hotkeys };
     const keyRows = {};
@@ -808,44 +888,203 @@
       });
       const { li } = makeRow(t.hotkeyNames[action], "", field);
       keyRows[action] = li;
-      ul.appendChild(li);
+      add(li);
     }
     renderKeyStatus();
 
-    // ── Appearance ──
-    ul.appendChild(makeHeader(t.groupLook, 24));
+    // ══ Appearance ══
+    tab("look");
     // without Windows 11 materials a saved Mica / Acrylic theme works as the default one (main.js does the same)
     const isMaterial = (k) => k === "mica" || k === "acrylic";
     const shownTheme = !state.materials && isMaterial(cfg.theme) ? "default" : cfg.theme || "default";
     const themeChips = makeChips(Object.entries(t.themes).filter(([k]) => state.materials || !isMaterial(k)), shownTheme, (value) => window.ymMods.setConfig({ theme: value }));
-    ul.appendChild(makeRow(t.theme[0], state.materials ? t.theme[1] + ". " + t.materialNote : t.theme[1], themeChips).li);
+    add(makeRow(t.theme[0], state.materials ? t.theme[1] + ". " + t.materialNote : t.theme[1], themeChips).li);
     // the app's own light / dark choice, set through its profile widget (features.js)
     const theme = window.__ymModsTheme;
     if (theme) {
       const schemeChips = makeChips(Object.entries(t.schemes), theme.get(), (value) => { theme.set(value); });
-      ul.appendChild(makeRow(t.scheme[0], t.scheme[1], schemeChips).li);
+      add(makeRow(t.scheme[0], t.scheme[1], schemeChips).li);
     }
-    addToggles(["accentFromCover"]);
+    addToggles(["accentFromCover", "waveAccent"]);
     const zoomValues = [0.9, 1, 1.1, 1.25, 1.5];
     const zoomNow = zoomValues.find((z) => Math.abs(z - (cfg.zoomFactor || 1)) < 0.001);
     const zoomChips = makeChips(zoomValues.map((z) => [String(z), Math.round(z * 100) + "%"]), zoomNow ? String(zoomNow) : null,
       (value) => window.ymMods.setConfig({ zoomFactor: Number(value) }));
-    ul.appendChild(makeRow(t.zoom[0], t.zoom[1], zoomChips).li);
+    add(makeRow(t.zoom[0], t.zoom[1], zoomChips).li);
     addToggles(["hideWordsCard", "hideConcerts", "hideNonMusic", "hidePlusPromo"]);
 
-    // ── Performance ──
-    ul.appendChild(makeHeader(t.groupPerf, 24));
+    // ══ My Vibe ══
+    tab("vibe");
+    addToggles(["vibeAfterQueue"]);
     const animChips = makeChips(Object.entries(t.vibeAnimModes), cfg.vibeAnimation || "on", (value) => window.ymMods.setConfig({ vibeAnimation: value }));
-    ul.appendChild(makeRow(t.vibeAnimation[0], t.vibeAnimation[1], animChips).li);
+    add(makeRow(t.vibeAnimation[0], t.vibeAnimation[1], animChips).li);
+    const reactChips = makeChips(Object.entries(t.waveReactModes), cfg.waveReact || "lively", (value) => window.ymMods.setConfig({ waveReact: value }));
+    add(makeRow(t.waveReact[0], t.waveReact[1], reactChips).li);
+    sub(t.wheel);
+    // Service entries are stored language-neutral ("@artist", "@promo"); older configs may hold Russian text
+    const label = (key, item) => {
+      if (key === "artist:*") return t.artists;
+      const tokens = { "@promo": t.promo, "Промо": t.promo, "@album": t.album, ALBUM: t.album, "@playlist": t.playlist, PLAYLIST: t.playlist, "@artistTile": t.artistTile, WAVE: "" };
+      const desc = item.desc in tokens ? tokens[item.desc] : item.desc;
+      return [item.name, desc];
+    };
+    const known = Object.entries(cfg.wheelKnown || {})
+      .map(([key, item]) => [key, label(key, item)])
+      .sort(([ak, a], [bk, b]) => (ak === "artist:*" ? -1 : bk === "artist:*" ? 1 : (a[1] || "").localeCompare(b[1] || "") || a[0].localeCompare(b[0])));
+    const keep = new Set(cfg.wheelKeep || []);
+    const saveKeep = () => window.ymMods.setConfig({ wheelKeep: [...keep] });
+    add(makeToggle(...t.wheelShowSettingsTile, cfg.wheelShowSettingsTile !== false, setToggle("wheelShowSettingsTile")));
+    add(makeToggle(...t.wheelFilter, !!cfg.wheelFilter, async (v) => {
+      if (v && !keep.size) {
+        known.forEach(([key]) => keep.add(key));
+        await saveKeep();
+        ul.querySelectorAll("[data-wheel-key] [role=switch]").forEach((b) => setSwitch(b, true, cls));
+      }
+      await window.ymMods.setConfig({ wheelFilter: v });
+    }));
+    if (!known.length) {
+      const li = document.createElement("li");
+      li.className = toggleTpl.className;
+      li.style.cssText = "opacity:.6;padding:8px 0";
+      li.textContent = t.wheelEmpty;
+      add(li);
+    }
+    for (const [key, [name, desc]] of known) {
+      const li = makeToggle(name, desc ? `${desc} · ${key}` : key, keep.has(key), async (v) => {
+        if (v) keep.add(key); else keep.delete(key);
+        await saveKeep();
+      });
+      li.dataset.wheelKey = key;
+      add(li);
+    }
 
-    // ── Storage ──
-    ul.appendChild(makeHeader(t.groupStorage, 24));
+    // ══ Integrations ══
+    tab("integrations");
+    sub("Discord");
+    const discordToggle = makeToggle(...t.discordRpc, !!cfg.discordRpc, async (v) => { const r = await window.ymMods.setConfig({ discordRpc: v }); showDiscord(r && r.discord); });
+    add(discordToggle);
+    const showDiscord = (status) => {
+      const msg = t.discordStatus[status] || "";
+      discordToggle.ymDesc.textContent = msg || t.discordRpc[1];
+      discordToggle.ymDesc.classList.toggle("ymmods-ok", status === "connected");
+      discordToggle.ymDesc.classList.toggle("ymmods-note", status === "error");
+    };
+    if (cfg.discordRpc) showDiscord(state.discord);
+    // the connection is made in the background: refresh the status for a while
+    let discordPolls = 0;
+    const discordTimer = setInterval(async () => {
+      if (!discordToggle.isConnected || ++discordPolls > 40) return clearInterval(discordTimer);
+      const st = await window.ymMods.getState();
+      if (st && st.config.discordRpc) showDiscord(st.discord);
+    }, 3000);
+    add(makeRow(t.discordClientId[0], t.discordClientId[1],
+      makeInput(cfg.discordClientId, "123456789012345678", async (v) => { const r = await window.ymMods.setConfig({ discordClientId: v }); showDiscord(r && r.discord); })).li);
+    addToggles(["discordShowPaused"]);
+
+    sub("Last.fm");
+    add(makeToggle(...t.lastfmEnabled, !!cfg.lastfmEnabled, setToggle("lastfmEnabled")));
+    add(makeRow(t.lastfmApiKey[0], t.lastfmApiKey[1], makeInput(cfg.lastfmApiKey, "API key", (v) => window.ymMods.setConfig({ lastfmApiKey: v }))).li);
+    add(makeRow(t.lastfmApiSecret[0], t.lastfmApiSecret[1], makeInput(cfg.lastfmApiSecret, "Shared secret", (v) => window.ymMods.setConfig({ lastfmApiSecret: v }), true)).li);
+    const accountBox = chipGroup();
+    const { li: accountRow } = makeRow(t.lastfmAccount[0], cfg.lastfmUser ? t.lastfmUser(cfg.lastfmUser) : t.lastfmAccount[1], accountBox);
+    add(accountRow);
+    const renderAccount = (user) => {
+      accountBox.textContent = "";
+      note(accountRow, user ? t.lastfmUser(user) : t.lastfmAccount[1]);
+      if (user) accountRow.ymDesc.classList.add("ymmods-ok");
+      accountBox.append(user
+        ? chipButton(t.lastfmLogout, async () => { await window.ymMods.lastfmLogout(); renderAccount(""); })
+        : chipButton(t.lastfmLogin, async () => {
+          note(accountRow, t.lastfmWaiting);
+          const res = await window.ymMods.lastfmLogin();
+          if (res && res.ok) renderAccount(res.user);
+          else note(accountRow, res && res.error === "no-keys" ? t.lastfmNeedKeys : t.failed + (res && res.error ? ": " + res.error : ""), true);
+        }));
+    };
+    renderAccount(cfg.lastfmUser);
+
+    // Local API / OBS widget
+    sub("API · OBS");
+    const copyButton = (getText) => {
+      const b = chipButton(t.copy, async () => {
+        try { await navigator.clipboard.writeText(getText()); b.textContent = t.copied; setTimeout(() => { b.textContent = t.copy; }, 1500); } catch {}
+      });
+      return b;
+    };
+    let apiInfo = null;
+    const apiToggle = makeToggle(...t.localApi, !!cfg.localApi, async (v) => { await window.ymMods.setConfig({ localApi: v }); renderApi(); });
+    add(apiToggle);
+    const widgetBox = chipGroup(), urlBox = chipGroup(), tokenBox = chipGroup();
+    const { li: widgetRow } = makeRow(t.localApiWidget[0], t.localApiWidget[1], widgetBox);
+    const { li: urlRow } = makeRow(t.localApiUrl[0], t.localApiUrl[1], urlBox);
+    const { li: tokenRow } = makeRow(t.localApiToken[0], t.localApiToken[1], tokenBox);
+    const { li: portRow } = makeRow(t.localApiPort[0], t.localApiPort[1],
+      makeInput(String(cfg.localApiPort || 24850), "24850", async (v) => { const n = parseInt(v, 10); if (n >= 1024 && n <= 65535) await window.ymMods.setConfig({ localApiPort: n }); renderApi(); }));
+    const localApiRow = [widgetRow, urlRow, tokenRow, portRow];
+    localApiRow.forEach((row) => add(row));
+    const mono = (textValue) => { const c = document.createElement("code"); c.textContent = textValue; c.style.cssText = "font:12px/16px ui-monospace,Consolas,monospace;opacity:.8;user-select:all;margin-right:6px;align-self:center;overflow-wrap:anywhere"; return c; };
+    const renderApi = async () => {
+      apiInfo = await window.ymMods.localApi();
+      const on = apiInfo && apiInfo.enabled;
+      localApiRow.forEach((row) => { row.style.display = on ? "" : "none"; });
+      if (!on) { apiToggle.ymDesc.textContent = t.localApi[1]; apiToggle.ymDesc.classList.remove("ymmods-ok", "ymmods-note"); return; }
+      apiToggle.ymDesc.textContent = apiInfo.error === "port-busy" ? t.apiBusy : apiInfo.status === "on" ? t.apiOn(apiInfo.port) : t.localApi[1];
+      apiToggle.ymDesc.classList.toggle("ymmods-ok", apiInfo.status === "on");
+      apiToggle.ymDesc.classList.toggle("ymmods-note", apiInfo.status === "error");
+      widgetBox.textContent = ""; urlBox.textContent = ""; tokenBox.textContent = "";
+      widgetBox.append(mono(apiInfo.widget), copyButton(() => apiInfo.widget));
+      urlBox.append(mono(apiInfo.api), copyButton(() => apiInfo.api));
+      tokenBox.append(mono(apiInfo.token.slice(0, 6) + "…"), copyButton(() => apiInfo.token), chipButton(t.regenerate, async () => { await window.ymMods.localApi("regen"); renderApi(); }));
+    };
+    renderApi();
+
+    // ══ System ══
+    tab("system");
+    sub(t.groupModUpdate);
+    const updateBox = chipGroup();
+    const { li: updateRow } = makeRow(t.modVersion, t.modChecking, updateBox);
+    add(updateRow);
+    const renderUpdate = (st, busyText) => {
+      updateBox.textContent = "";
+      if (!st) return;
+      let desc = t.modInstalled(st.installed === "0.0.0" ? "—" : st.installed);
+      let bad = false;
+      if (busyText) desc = busyText;
+      else if (st.error && /no releases/.test(st.error)) desc += " · " + t.modNoRelease;
+      else if (st.error) { desc += " · " + t.failed + ": " + st.error; bad = true; }
+      else if (st.available) desc += " · " + t.modLatest(st.latest);
+      else if (st.latest) desc += " · " + t.modUpToDate;
+      note(updateRow, desc, bad);
+      if (st.available && !st.error) updateRow.ymDesc.classList.add("ymmods-ok");
+      if (busyText) return;
+      updateBox.append(chipButton(t.modCheck, async () => { renderUpdate(st, t.modChecking); renderUpdate(await window.ymMods.modUpdate("check")); }));
+      if (st.available) {
+        const b = chipButton(t.modUpdate(st.latest), async () => {
+          renderUpdate(st, t.modDownloading);
+          const res = await window.ymMods.modUpdate("install");
+          renderUpdate(res, res && res.installing ? t.modInstalling : null);
+        });
+        b.setAttribute("aria-pressed", "true"); // highlighted like a selected chip
+        updateBox.append(b);
+      }
+    };
+    window.ymMods.modUpdate("status").then((st) => (st && !st.checkedAt ? window.ymMods.modUpdate("check") : st)).then((st) => renderUpdate(st));
+    add(makeToggle(...t.modAutoUpdate, !!cfg.modAutoUpdate, setToggle("modAutoUpdate")));
+
+    sub(t.subApp);
+    addToggles(["disableUpdates"]);
+    sub(t.subTray);
+    addToggles(["trayUnloadWhenPaused", ...(isWin ? ["trayTrimWhenPlaying"] : [])]);
+    sub(t.groupPrivacy);
+    addToggles(["blockMetrics", "blockAds"]);
+
+    sub(t.groupStorage);
     const downloadsBox = chipGroup();
     const { li: downloadsRow } = makeRow(t.downloads[0], "…", downloadsBox);
-    ul.appendChild(downloadsRow);
+    add(downloadsRow);
     const cacheBox = chipGroup();
     const { li: cacheRow } = makeRow(t.cache[0], "…", cacheBox);
-    ul.appendChild(cacheRow);
+    add(cacheRow);
     const renderStorage = async () => {
       const info = await window.ymMods.storageInfo();
       if (!info) return;
@@ -878,152 +1117,46 @@
     };
     renderStorage();
 
-    // ── Integrations ──
-    ul.appendChild(makeHeader(t.groupIntegrations, 24));
-    const discordToggle = makeToggle(...t.discordRpc, !!cfg.discordRpc, async (v) => { const r = await window.ymMods.setConfig({ discordRpc: v }); showDiscord(r && r.discord); });
-    ul.appendChild(discordToggle);
-    const showDiscord = (status) => {
-      const msg = t.discordStatus[status] || "";
-      discordToggle.ymDesc.textContent = msg || t.discordRpc[1];
-      discordToggle.ymDesc.classList.toggle("ymmods-ok", status === "connected");
-      discordToggle.ymDesc.classList.toggle("ymmods-note", status === "error");
-    };
-    if (cfg.discordRpc) showDiscord(state.discord);
-    // the connection is made in the background: refresh the status for a while
-    let discordPolls = 0;
-    const discordTimer = setInterval(async () => {
-      if (!discordToggle.isConnected || ++discordPolls > 40) return clearInterval(discordTimer);
-      const st = await window.ymMods.getState();
-      if (st && st.config.discordRpc) showDiscord(st.discord);
-    }, 3000);
-    ul.appendChild(makeRow(t.discordClientId[0], t.discordClientId[1],
-      makeInput(cfg.discordClientId, "123456789012345678", async (v) => { const r = await window.ymMods.setConfig({ discordClientId: v }); showDiscord(r && r.discord); })).li);
-    addToggles(["discordShowPaused"]);
-
-    ul.appendChild(makeToggle(...t.lastfmEnabled, !!cfg.lastfmEnabled, setToggle("lastfmEnabled")));
-    ul.appendChild(makeRow(t.lastfmApiKey[0], t.lastfmApiKey[1], makeInput(cfg.lastfmApiKey, "API key", (v) => window.ymMods.setConfig({ lastfmApiKey: v }))).li);
-    ul.appendChild(makeRow(t.lastfmApiSecret[0], t.lastfmApiSecret[1], makeInput(cfg.lastfmApiSecret, "Shared secret", (v) => window.ymMods.setConfig({ lastfmApiSecret: v }), true)).li);
-    const accountBox = chipGroup();
-    const { li: accountRow } = makeRow(t.lastfmAccount[0], cfg.lastfmUser ? t.lastfmUser(cfg.lastfmUser) : t.lastfmAccount[1], accountBox);
-    ul.appendChild(accountRow);
-    const renderAccount = (user) => {
-      accountBox.textContent = "";
-      note(accountRow, user ? t.lastfmUser(user) : t.lastfmAccount[1]);
-      if (user) accountRow.ymDesc.classList.add("ymmods-ok");
-      accountBox.append(user
-        ? chipButton(t.lastfmLogout, async () => { await window.ymMods.lastfmLogout(); renderAccount(""); })
-        : chipButton(t.lastfmLogin, async () => {
-          note(accountRow, t.lastfmWaiting);
-          const res = await window.ymMods.lastfmLogin();
-          if (res && res.ok) renderAccount(res.user);
-          else note(accountRow, res && res.error === "no-keys" ? t.lastfmNeedKeys : t.failed + (res && res.error ? ": " + res.error : ""), true);
-        }));
-    };
-    renderAccount(cfg.lastfmUser);
-
-    // ── Local API / OBS widget ──
-    const copyButton = (getText) => {
-      const b = chipButton(t.copy, async () => {
-        try { await navigator.clipboard.writeText(getText()); b.textContent = t.copied; setTimeout(() => { b.textContent = t.copy; }, 1500); } catch {}
-      });
-      return b;
-    };
-    let apiInfo = null;
-    const apiToggle = makeToggle(...t.localApi, !!cfg.localApi, async (v) => { await window.ymMods.setConfig({ localApi: v }); renderApi(); });
-    ul.appendChild(apiToggle);
-    const widgetBox = chipGroup(), urlBox = chipGroup(), tokenBox = chipGroup();
-    const { li: widgetRow } = makeRow(t.localApiWidget[0], t.localApiWidget[1], widgetBox);
-    const { li: urlRow } = makeRow(t.localApiUrl[0], t.localApiUrl[1], urlBox);
-    const { li: tokenRow } = makeRow(t.localApiToken[0], t.localApiToken[1], tokenBox);
-    const { li: portRow } = makeRow(t.localApiPort[0], t.localApiPort[1],
-      makeInput(String(cfg.localApiPort || 24850), "24850", async (v) => { const n = parseInt(v, 10); if (n >= 1024 && n <= 65535) await window.ymMods.setConfig({ localApiPort: n }); renderApi(); }));
-    const localApiRow = [widgetRow, urlRow, tokenRow, portRow];
-    localApiRow.forEach((row) => ul.appendChild(row));
-    const mono = (textValue) => { const c = document.createElement("code"); c.textContent = textValue; c.style.cssText = "font:12px/16px ui-monospace,Consolas,monospace;opacity:.8;user-select:all;margin-right:6px;align-self:center;overflow-wrap:anywhere"; return c; };
-    const renderApi = async () => {
-      apiInfo = await window.ymMods.localApi();
-      const on = apiInfo && apiInfo.enabled;
-      localApiRow.forEach((row) => { row.style.display = on ? "" : "none"; });
-      if (!on) { apiToggle.ymDesc.textContent = t.localApi[1]; apiToggle.ymDesc.classList.remove("ymmods-ok", "ymmods-note"); return; }
-      apiToggle.ymDesc.textContent = apiInfo.error === "port-busy" ? t.apiBusy : apiInfo.status === "on" ? t.apiOn(apiInfo.port) : t.localApi[1];
-      apiToggle.ymDesc.classList.toggle("ymmods-ok", apiInfo.status === "on");
-      apiToggle.ymDesc.classList.toggle("ymmods-note", apiInfo.status === "error");
-      widgetBox.textContent = ""; urlBox.textContent = ""; tokenBox.textContent = "";
-      widgetBox.append(mono(apiInfo.widget), copyButton(() => apiInfo.widget));
-      urlBox.append(mono(apiInfo.api), copyButton(() => apiInfo.api));
-      tokenBox.append(mono(apiInfo.token.slice(0, 6) + "…"), copyButton(() => apiInfo.token), chipButton(t.regenerate, async () => { await window.ymMods.localApi("regen"); renderApi(); }));
-    };
-    renderApi();
-
-    // ── Privacy ──
-    ul.appendChild(makeHeader(t.groupPrivacy, 24));
-    addToggles(["blockMetrics", "blockAds"]);
-
-    // ── Mod files ──
+    // ══ Mod files and settings backup ══
+    tab("files");
     for (const mod of state.mods) {
       const kind = mod.name.endsWith(".css") ? t.modCss : t.modJs;
-      ul.appendChild(makeToggle(mod.name.replace(/^_/, ""), kind, mod.enabled, async (v) => {
+      add(makeToggle(mod.name.replace(/^_/, ""), kind, mod.enabled, async (v) => {
         const res = await window.ymMods.toggleMod(mod.name, v);
         if (res && res.name) mod.name = res.name;
       }));
     }
     const dirNote = isWin || !state.modsDir ? t.openDir[1] : t.openDir[1].replace("%APPDATA%\\YandexMusic\\mods", state.modsDir);
-    ul.appendChild(makeAction(t.openDir[0], dirNote, () => window.ymMods.openDir()));
-
-    // ── Backup ──
-    ul.appendChild(makeHeader(t.groupBackup, 24));
+    add(makeAction(t.openDir[0], dirNote, () => window.ymMods.openDir()));
+    sub(t.groupBackup);
     const report = (li, text, ok) => { if (!li.ymDesc) return; li.ymDesc.textContent = text; li.ymDesc.classList.toggle("ymmods-ok", ok); li.ymDesc.classList.toggle("ymmods-note", !ok); };
-    ul.appendChild(makeAction(t.exportSettings[0], t.exportSettings[1], async (li) => {
+    add(makeAction(t.exportSettings[0], t.exportSettings[1], async (li) => {
       const res = await window.ymMods.exportSettings();
       if (res && res.ok) report(li, t.exported(res.mods), true); else if (res && !res.canceled) report(li, t.failed, false);
     }));
-    ul.appendChild(makeAction(t.importSettings[0], t.importSettings[1], async (li) => {
+    add(makeAction(t.importSettings[0], t.importSettings[1], async (li) => {
       const res = await window.ymMods.importSettings();
       if (res && res.ok) report(li, t.imported(res.mods), true); else if (res && !res.canceled) report(li, t.failed + (res.error ? ": " + res.error : ""), false);
     }));
 
-    // ── My Vibe wheel filter ──
-    ul.appendChild(makeHeader(t.wheel, 24));
-    // Service entries are stored language-neutral ("@artist", "@promo"); older configs may hold Russian text
-    const label = (key, item) => {
-      if (key === "artist:*") return t.artists;
-      const tokens = { "@promo": t.promo, "Промо": t.promo, "@album": t.album, ALBUM: t.album, "@playlist": t.playlist, PLAYLIST: t.playlist, "@artistTile": t.artistTile, WAVE: "" };
-      const desc = item.desc in tokens ? tokens[item.desc] : item.desc;
-      return [item.name, desc];
-    };
-    const known = Object.entries(cfg.wheelKnown || {})
-      .map(([key, item]) => [key, label(key, item)])
-      .sort(([ak, a], [bk, b]) => (ak === "artist:*" ? -1 : bk === "artist:*" ? 1 : (a[1] || "").localeCompare(b[1] || "") || a[0].localeCompare(b[0])));
-    const keep = new Set(cfg.wheelKeep || []);
-    const saveKeep = () => window.ymMods.setConfig({ wheelKeep: [...keep] });
-    ul.appendChild(makeToggle(...t.wheelShowSettingsTile, cfg.wheelShowSettingsTile !== false, setToggle("wheelShowSettingsTile")));
-    ul.appendChild(makeToggle(...t.wheelFilter, !!cfg.wheelFilter, async (v) => {
-      if (v && !keep.size) {
-        known.forEach(([key]) => keep.add(key));
-        await saveKeep();
-        ul.querySelectorAll("[data-wheel-key] [role=switch]").forEach((b) => setSwitch(b, true, cls));
-      }
-      await window.ymMods.setConfig({ wheelFilter: v });
-    }));
-    if (!known.length) {
-      const li = document.createElement("li");
-      li.className = toggleTpl.className;
-      li.style.cssText = "opacity:.6;padding:8px 0";
-      li.textContent = t.wheelEmpty;
-      ul.appendChild(li);
-    }
-    for (const [key, [name, desc]] of known) {
-      const li = makeToggle(name, desc ? `${desc} · ${key}` : key, keep.has(key), async (v) => {
-        if (v) keep.add(key); else keep.delete(key);
-        await saveKeep();
-      });
-      li.dataset.wheelKey = key;
-      ul.appendChild(li);
-    }
+    ul.appendChild(emptyLi);
+    applyFilter();
 
     // React may have re-rendered the list while we awaited getState()
     const current = document.querySelector('[data-test-id="SETTINGS_LIST"]');
-    if (current && !document.getElementById("ymmods-settings")) current.after(ul);
+    if (current && !document.getElementById("ymmods-settings")) {
+      current.after(ul);
+      // the mod's block comes after the app's long list: a shortcut to it at the top of the page
+      const old = document.getElementById("ymmods-jump");
+      if (old) old.remove();
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.id = "ymmods-jump";
+      jump.className = "ymmods-chip";
+      jump.textContent = t.jumpToMods;
+      jump.addEventListener("click", () => navLi.scrollIntoView({ behavior: "smooth", block: "start" }));
+      current.before(jump);
+    }
   };
 
   let busy = false;

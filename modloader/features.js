@@ -123,6 +123,13 @@
     kk: { shuffleOn: "Араластыру қосулы", shuffleOff: "Араластыру өшірулі", repeat: { none: "Қайталау өшірулі", context: "Тізімді қайталау", one: "Тректі қайталау" }, noShuffle: "Мұнда араластыру қолжетімсіз", search: "Плейлист табу", nothing: "Ештеңе табылмады", repeatBtn: "Тректі қайталау", download: "Жүктеп алу", downloaded: "Жүктелген", downloading: "Трек жүктелуде…", mini: "Шағын ойнатқыш", headphones: "Кідірту: дыбыс шығару құрылғысы ажыратылды", vibeAfter: "Кейін — Менің толқыным", vibeMode: { off: "Кейін Менің толқыным: өшірулі", list: "Кейін Менің толқыным: тізімнен кейін", track: "Кейін Менің толқыным: осы тректен кейін" }, vibeStart: { list: "Тізім аяқталды — Менің толқыным қосылуда", track: "Трек аяқталды — Менің толқыным қосылуда" } },
     uz: { shuffleOn: "Aralashtirish yoqildi", shuffleOff: "Aralashtirish o‘chirildi", repeat: { none: "Takrorlash o‘chiq", context: "Ro‘yxatni takrorlash", one: "Trekni takrorlash" }, noShuffle: "Bu yerda aralashtirish mavjud emas", search: "Pleylist topish", nothing: "Hech narsa topilmadi", repeatBtn: "Trekni takrorlash", download: "Yuklab olish", downloaded: "Yuklab olingan", downloading: "Trek yuklanmoqda…", mini: "Mini pleyer", headphones: "Pauza: ovoz chiqarish qurilmasi uzildi", vibeAfter: "Keyin — Mening to‘lqinim", vibeMode: { off: "Keyin Mening to‘lqinim: o‘chiq", list: "Keyin Mening to‘lqinim: ro‘yxatdan keyin", track: "Keyin Mening to‘lqinim: shu trekdan keyin" }, vibeStart: { list: "Ro‘yxat tugadi — Mening to‘lqinim yoqilmoqda", track: "Trek tugadi — Mening to‘lqinim yoqilmoqda" } },
   };
+  // quality ladder (click on the codec badge)
+  const QTEXT = {
+    ru: { video: "Есть видео", title: "Качество звука", tiers: { lossless: "Без потерь", high: "Высокое", normal: "Оптимальное", low: "Экономичное" }, now: "сейчас", hint: "Сверху — лучшее. Какой файл придёт, зависит от настройки качества, подписки и самого трека", settings: "Настройка качества…" },
+    en: { video: "Has a video", title: "Sound quality", tiers: { lossless: "Lossless", high: "High", normal: "Balanced", low: "Data saver" }, now: "now", hint: "Best on top. Which file arrives depends on the quality setting, the subscription and the track itself", settings: "Quality setting…" },
+    kk: { video: "Бейнесі бар", title: "Дыбыс сапасы", tiers: { lossless: "Шығынсыз", high: "Жоғары", normal: "Оңтайлы", low: "Үнемді" }, now: "қазір", hint: "Ең жақсысы — жоғарыда. Қай файл келетіні сапа баптауына, жазылымға және тректің өзіне байланысты", settings: "Сапа баптауы…" },
+    uz: { video: "Videosi bor", title: "Ovoz sifati", tiers: { lossless: "Yo‘qotishsiz", high: "Yuqori", normal: "Optimal", low: "Tejamkor" }, now: "hozir", hint: "Eng yaxshisi — tepada. Qaysi fayl kelishi sifat sozlamasi, obuna va trekning o‘ziga bog‘liq", settings: "Sifat sozlamasi…" },
+  };
   const lang = () => { let l = ""; try { l = JSON.parse(localStorage.getItem("funtech-lang") || "{}").value || ""; } catch {} return (l || document.documentElement.lang || "ru").slice(0, 2); };
   const text = () => TEXT[lang()] || TEXT.en;
 
@@ -182,6 +189,46 @@
       letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .ymmods-quality[data-lossless] { border-color: var(--ym-controls-color-primary-default-enabled, #ff0); color: var(--ym-controls-color-primary-default-enabled, #ff0); }
     html[data-ym-no-quality] .ymmods-quality { display: none; }
+    .ymmods-quality { cursor: pointer; transition: background-color .15s; }
+    .ymmods-quality:hover, .ymmods-quality[aria-expanded="true"] { background-color: rgba(255,255,255,.08); }
+    /* quality ladder: every format best → worst, the playing one marked */
+    #ymmods-qpop { position: fixed; z-index: 10001; width: 300px; padding: 14px 0 10px; border-radius: 16px;
+      background: var(--ym-background-color-primary-enabled-popover, #1f1f1f); color: var(--ym-controls-color-primary-text-enabled_variant, #e6e6e6);
+      box-shadow: 0 10px 32px rgba(0,0,0,.45); font: 500 13px/18px "YS Text", sans-serif; animation: ymmods-in .15s ease; }
+    #ymmods-qpop .t { padding: 0 16px 8px; font-size: 15px; font-weight: 600; }
+    #ymmods-qpop ol { margin: 0; padding: 0; list-style: none; }
+    #ymmods-qpop li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 6px 16px; opacity: .55; }
+    #ymmods-qpop li[data-current] { opacity: 1; background: rgba(255,255,255,.06); }
+    #ymmods-qpop .bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+    #ymmods-qpop .bars i { width: 4px; border-radius: 1px; background: currentColor; opacity: .25; }
+    #ymmods-qpop .bars i:nth-child(1) { height: 5px; } #ymmods-qpop .bars i:nth-child(2) { height: 8px; }
+    #ymmods-qpop .bars i:nth-child(3) { height: 11px; } #ymmods-qpop .bars i:nth-child(4) { height: 14px; }
+    #ymmods-qpop .bars i[data-on] { opacity: 1; }
+    #ymmods-qpop li[data-current] .bars, #ymmods-qpop li[data-current] .now { color: var(--ym-controls-color-primary-default-enabled, #ff0); }
+    #ymmods-qpop .name { font-weight: 600; font-variant-numeric: tabular-nums; }
+    #ymmods-qpop .tier { font-weight: 400; opacity: .7; margin-left: 6px; }
+    #ymmods-qpop .now { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    #ymmods-qpop .hint { padding: 8px 16px 4px; font-size: 11px; line-height: 14px; opacity: .5; }
+    #ymmods-qpop button { margin: 6px 12px 0; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16);
+      background: transparent; color: inherit; font: 500 13px/30px "YS Text", sans-serif; cursor: pointer; }
+    #ymmods-qpop button:hover { background: rgba(255,255,255,.08); }
+    body.ym-light-theme #ymmods-qpop li[data-current] { background: rgba(0,0,0,.05); }
+    body.ym-light-theme #ymmods-qpop button { border-color: rgba(0,0,0,.16); }
+    /* track video: the track's background video behind the My Vibe page / the full screen player, dimmed for the text */
+    .ymmods-video-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .8s ease; }
+    .ymmods-video-bg.ymmods-fixed { position: fixed; }
+    .ymmods-video-bg[data-ready] { opacity: 1; }
+    .ymmods-video-bg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+    .ymmods-video-bg::after { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.38) 38%, rgba(0,0,0,.3) 70%, rgba(0,0,0,.45) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 30%, transparent 55%, rgba(0,0,0,.7) 100%); }
+    html[data-ym-video-bg] [data-test-id="VIBE_ARTIST_COVER"] { opacity: 0 !important; transition: opacity .8s ease; }
+    [data-test-id="FULLSCREEN_PLAYER_MODAL"]:has(> .ymmods-video-bg) { isolation: isolate; }
+    html:not([data-ym-track-video]) .ymmods-video-bg { display: none; }
+    .ymmods-video-mark { display: inline-flex; flex: none; align-items: center; align-self: center; margin: 0 2px 0 6px; opacity: .55; color: inherit; line-height: 0; }
+    .ymmods-video-mark svg { width: 18px; height: 14px; }
+    html:not([data-ym-track-video]) .ymmods-video-mark { display: none; }
+    html[data-ym-video-bg] [data-test-id="VIBE_ANIMATION"] { opacity: 0 !important; transition: opacity .8s ease; }
     /* on the My Vibe page the badge sits above the app version, in the same pill style */
     [class*="MainPage_betaSlot"]:has(.ymmods-modver) { display: flex; align-items: center; gap: 6px; }
     .ymmods-quality.ymmods-in-slot { position: absolute; right: 0; bottom: calc(100% + 6px); margin: 0; padding: 4px 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.08);
@@ -406,7 +453,7 @@
   badge.className = "ymmods-quality";
   const updateBadge = (s) => {
     const codec = s.codec ? CODECS[s.codec] || s.codec.toUpperCase() : "";
-    if (!codec) { badge.remove(); return; }
+    if (!codec) { badge.remove(); if (qpop.isConnected) closeLadder(); return; }
     const lossless = /flac/.test(s.codec);
     badge.textContent = lossless || !s.bitrate ? codec : `${codec} ${s.bitrate}`;
     badge.toggleAttribute("data-lossless", lossless);
@@ -416,6 +463,508 @@
     const anchor = version || $("SOUND_QUALITY_BUTTON");
     badge.classList.toggle("ymmods-in-slot", !!version);
     if (anchor && badge.nextElementSibling !== anchor) anchor.before(badge);
+    badgeState = s;
+    if (qpop.isConnected) renderLadder();
+  };
+
+  // ── Quality ladder: a click on the badge lists the formats Yandex Music serves, best first, the playing one marked ──
+  // Perceived quality, not the raw bitrate: AAC is about as good as MP3 at ~1.25× its bitrate, HE-AAC at ~1.6×
+  const codecFamily = (c) => (/flac/.test(c) ? "flac" : /he-aac/.test(c) ? "he-aac" : /aac/.test(c) ? "aac" : /mp3/.test(c) ? "mp3" : c);
+  const qScore = (fam, br) => (fam === "flac" ? 10000 : (br || 0) * (fam === "he-aac" ? 1.6 : fam === "aac" ? 1.25 : 1));
+  const qTier = (score) => (score >= 1000 ? "lossless" : score >= 300 ? "high" : score >= 150 ? "normal" : "low");
+  const QBARS = { lossless: 4, high: 3, normal: 2, low: 1 };
+  const LADDER = [["flac", 0], ["aac", 256], ["mp3", 320], ["aac", 192], ["mp3", 192], ["aac", 128], ["mp3", 128], ["he-aac", 64]];
+  let badgeState = null;
+  const qpop = document.createElement("div");
+  qpop.id = "ymmods-qpop";
+  qpop.setAttribute("role", "dialog");
+  const renderLadder = () => {
+    const s = badgeState;
+    const t = QTEXT[lang()] || QTEXT.en;
+    const fam = s && s.codec ? codecFamily(s.codec) : "";
+    const rows = LADDER.map(([f, br], i) => ({ f, br, i, score: qScore(f, br) }));
+    const same = (r) => r.f === fam && (fam === "flac" || r.br === s.bitrate);
+    // a format outside the usual ladder (another bitrate) gets its own row at its place
+    if (fam && !rows.some(same)) rows.push({ f: fam, br: s.bitrate || 0, i: 99, score: qScore(fam, s.bitrate) });
+    rows.sort((a, b) => b.score - a.score || a.i - b.i);
+    qpop.textContent = "";
+    const title = document.createElement("div");
+    title.className = "t";
+    title.textContent = t.title;
+    const ol = document.createElement("ol");
+    for (const r of rows) {
+      const li = document.createElement("li");
+      if (fam && same(r)) li.setAttribute("data-current", "");
+      const tier = qTier(r.score);
+      const bars = document.createElement("span");
+      bars.className = "bars";
+      for (let k = 1; k <= 4; k++) { const b = document.createElement("i"); if (k <= QBARS[tier]) b.setAttribute("data-on", ""); bars.appendChild(b); }
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = (CODECS[r.f] || r.f.toUpperCase()) + (r.f === "flac" ? "" : " " + r.br);
+      const tierEl = document.createElement("span");
+      tierEl.className = "tier";
+      tierEl.textContent = t.tiers[tier];
+      name.appendChild(tierEl);
+      const now = document.createElement("span");
+      now.className = "now";
+      now.textContent = li.hasAttribute("data-current") ? t.now : "";
+      li.append(bars, name, now);
+      ol.appendChild(li);
+    }
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = t.hint;
+    qpop.append(title, ol, hint);
+    // the app's own quality setting, if its button is on the page
+    const settingsBtn = $("SOUND_QUALITY_BUTTON");
+    if (settingsBtn) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = t.settings;
+      b.addEventListener("click", () => { closeLadder(); settingsBtn.click(); });
+      qpop.appendChild(b);
+    }
+  };
+  const placeLadder = () => {
+    const r = badge.getBoundingClientRect();
+    const w = qpop.offsetWidth || 300, h = qpop.offsetHeight || 300;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+    // above the badge when there is room (the player bar is at the bottom), else below
+    const top = r.top - h - 8 >= 8 ? r.top - h - 8 : Math.min(r.bottom + 8, innerHeight - h - 8);
+    qpop.style.left = left + "px";
+    qpop.style.top = top + "px";
+  };
+  const closeLadder = () => { qpop.remove(); badge.setAttribute("aria-expanded", "false"); };
+  badge.setAttribute("role", "button");
+  badge.setAttribute("aria-expanded", "false");
+  badge.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (qpop.isConnected) return closeLadder();
+    renderLadder();
+    document.body.appendChild(qpop);
+    badge.setAttribute("aria-expanded", "true");
+    placeLadder();
+  });
+  document.addEventListener("mousedown", (e) => { if (qpop.isConnected && !qpop.contains(e.target) && !badge.contains(e.target)) closeLadder(); }, true);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && qpop.isConnected) closeLadder(); }, true);
+  window.addEventListener("resize", () => { if (qpop.isConnected) placeLadder(); });
+
+  // ── Track video: like the mobile app, the track's own background video (a ~20 s vertical loop the artist uploads,
+  //    `backgroundVideoUri` of the track) plays muted behind the My Vibe page and the full screen player.
+  //    Requests go through the app's own API client (its environment in the model tree), so they carry its login ──
+  const appEnv = () => {
+    try { const m = findModels(); const n = m && m.root && m.root.$treenode; return (n && n.root && n.root.environment) || null; } catch { return null; }
+  };
+  const apiResource = (env) => {
+    if (!env) return null;
+    if (env.tracksResource && env.tracksResource.httpClient && typeof env.tracksResource.createHttpOptions === "function") return env.tracksResource;
+    for (const v of Object.values(env)) if (v && v.httpClient && typeof v.createHttpOptions === "function") return v;
+    return null;
+  };
+  const absUrl = (u) => (!u || typeof u !== "string" ? "" : /^https?:\/\//.test(u) ? u : "https://" + u.replace(/^\/+/, ""));
+  // Which tracks have a video, kept between launches (localStorage), so marks and backgrounds of tracks seen before
+  // appear at once: id -> [url or "" (none), day it was learnt]. A "none" is asked again after 3 days (artists add
+  // videos), a url after 30; the oldest entries go past 8000
+  const VIDEO_INDEX_KEY = "ymmods-video-index";
+  const today = () => Math.floor(Date.now() / 86400000);
+  let videoIndex = {};
+  try { videoIndex = JSON.parse(localStorage.getItem(VIDEO_INDEX_KEY) || "{}") || {}; } catch {}
+  let indexSaveTimer = 0;
+  const saveIndex = () => {
+    clearTimeout(indexSaveTimer);
+    indexSaveTimer = setTimeout(() => {
+      const keys = Object.keys(videoIndex);
+      if (keys.length > 8000) keys.sort((a, b) => videoIndex[a][1] - videoIndex[b][1]).slice(0, keys.length - 8000).forEach((k) => delete videoIndex[k]);
+      try { localStorage.setItem(VIDEO_INDEX_KEY, JSON.stringify(videoIndex)); } catch {}
+    }, 1500);
+  };
+  const indexGet = (id) => {
+    const e = id && videoIndex[id];
+    if (!e) return undefined;
+    return today() - e[1] > (e[0] ? 30 : 3) ? undefined : e[0];
+  };
+  const indexSet = (id, url) => {
+    url = absUrl(url);
+    const e = videoIndex[id];
+    if (e && e[0] === url && e[1] === today()) return;
+    videoIndex[id] = [url, today()];
+    saveIndex();
+  };
+  const lookingUp = new Set();
+  const lookupVideo = async (trackId) => {
+    const res = apiResource(appEnv());
+    if (!res) throw new Error("no api client");
+    const r = await (await res.httpClient.get("tracks/" + encodeURIComponent(trackId), res.createHttpOptions({ timeoutKey: "getClip", params: {} }))).json();
+    const tracks = Array.isArray(r) ? r : r && Array.isArray(r.result) ? r.result : r ? [r] : [];
+    const t = tracks.find((x) => x && String(x.id) === String(trackId)) || tracks[0];
+    return absUrl(t && t.backgroundVideoUri);
+  };
+  const makeVideo = (cls) => {
+    const v = document.createElement("video");
+    v.className = cls;
+    v.muted = true;
+    v.loop = true;
+    v.playsInline = true;
+    v.disablePictureInPicture = true;
+    v.preload = "auto";
+    v.setAttribute("aria-hidden", "true");
+    return v;
+  };
+  // The video layer fills the window background (the video is vertical: the window shows its upper middle part)
+  // under a shade that keeps text readable
+  const makeLayer = () => {
+    const box = document.createElement("div");
+    box.className = "ymmods-video-bg";
+    const video = makeVideo("ymmods-main");
+    box.append(video);
+    video.addEventListener("playing", () => box.setAttribute("data-ready", ""));
+    // a broken local copy is dropped (the next try streams it again); a network error just leaves the background off
+    video.addEventListener("error", () => { box.removeAttribute("data-ready"); dropLocal(video.currentSrc || video.src); });
+    return { box, video, id: "" };
+  };
+  const windowLayer = makeLayer();
+  // pause at once when the window loses focus (the tick would take up to 0.7 s); the tick starts them again on focus
+  window.addEventListener("blur", () => { if (!windowLayer.video.paused) windowLayer.video.pause(); });
+  window.addEventListener("focus", () => { try { updateTrackVideo(readState()); } catch {} });
+  // the url of a track's video: undefined while it is being asked, "" when it has none
+  const videoUrl = (id) => {
+    if (!id) return "";
+    const url = indexGet(id);
+    if (url !== undefined) return url;
+    if (!lookingUp.has(id)) {
+      lookingUp.add(id);
+      lookupVideo(id).then((u) => indexSet(id, u), () => {}).finally(() => lookingUp.delete(id));
+    }
+    return undefined;
+  };
+  // ── The video files themselves are kept on disk by the main process (the page cannot download them: the video
+  //    server sends no CORS headers) and come back as bytes: played from a blob, they start at once. The first time
+  //    a video streams from the network while its copy is being saved; the next tracks' videos are fetched ahead ──
+  const localVideos = new Map(); // url -> blob url ("" while loading), most recently used last
+  const dropLocal = (src) => {
+    for (const [url, blob] of localVideos) if (blob && blob === src) { URL.revokeObjectURL(blob); localVideos.delete(url); }
+  };
+  const loadLocal = (url) => {
+    if (!url || !window.ymMods || typeof window.ymMods.videoFile !== "function") return;
+    if (localVideos.has(url)) { const b = localVideos.get(url); localVideos.delete(url); localVideos.set(url, b); return; }
+    localVideos.set(url, "");
+    window.ymMods.videoFile(url, true).then((bytes) => {
+      if (!bytes || !bytes.byteLength) { localVideos.delete(url); return; }
+      if (!localVideos.has(url)) return;
+      localVideos.set(url, URL.createObjectURL(new Blob([bytes], { type: "video/mp4" })));
+      // a few in memory (the playing one, the next ones); the rest stay on disk only
+      for (const [u, b] of localVideos) {
+        if (localVideos.size <= 3) break;
+        if (!b || b === windowLayer.video.src) continue;
+        URL.revokeObjectURL(b);
+        localVideos.delete(u);
+      }
+    }, () => localVideos.delete(url));
+  };
+  // shows `layer` in `host` with the video of track `id` (or hides it); returns true while the video plays
+  const syncLayer = (layer, id, host, opts, play) => {
+    const { box, video } = layer;
+    if (id !== layer.id) {
+      layer.id = id;
+      box.removeAttribute("data-ready");
+      box.ymTrack = "";
+      video.removeAttribute("src");
+      video.load();
+    }
+    const url = host ? videoUrl(id) : "";
+    if (!url) {
+      if (box.isConnected) { box.remove(); video.pause(); }
+      return false;
+    }
+    if (box.parentElement !== host) host.appendChild(box);
+    box.classList.toggle("ymmods-fixed", !!opts.fixed);
+    box.classList.toggle("ymmods-page", !!opts.page);
+    if (!opts.fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
+    if (box.ymTrack !== id) {
+      // a copy on disk comes back in a few tens of ms: wait for it a little (up to 0.4 s) before streaming instead
+      if (layer.waitFor !== id) { layer.waitFor = id; layer.waitSince = performance.now(); }
+      if (!localVideos.has(url)) loadLocal(url);
+      const local = localVideos.get(url);
+      if (!local && local !== undefined && performance.now() - (layer.waitSince || 0) < 400) {
+        setTimeout(() => { try { updateTrackVideo(readState()); } catch {} }, 80);
+        return false;
+      }
+      box.ymTrack = id;
+      video.src = local || url;
+    }
+    // only in the active window: a background video in a window you are not looking at only costs GPU
+    if (play && !document.hidden && document.hasFocus()) { if (video.paused) video.play().catch(() => {}); } else if (!video.paused) video.pause();
+    return box.hasAttribute("data-ready");
+  };
+  // the glass theme paints the blurred cover behind every page: there the video takes its place everywhere
+  const glassOn = () => coverLayers[0].isConnected && getComputedStyle(coverLayers[0]).display !== "none";
+  const updateTrackVideo = (s) => {
+    const on = document.documentElement.hasAttribute("data-ym-track-video");
+    // the window: the playing track's video, in step with the music — in the full screen player, on the My Vibe page,
+    // and with the glass theme on every page
+    const modal = on ? $("FULLSCREEN_PLAYER_MODAL") : null;
+    const vibe = on && !modal && !!($("VIBE_ANIMATION") || $("VIBE_PLAYERBAR"));
+    const host = !on ? null : modal || (vibe || glassOn() ? document.body : null);
+    const windowId = on ? s.trackId || "" : "";
+    const playing = syncLayer(windowLayer, windowId, host, { fixed: !modal, page: !modal && !vibe }, s.playing);
+    // on the My Vibe page the wave animation and the artist photo step aside once the video really plays
+    document.documentElement.toggleAttribute("data-ym-video-bg", vibe && playing);
+  };
+  // ── Video mark: tracks that have a background video get a small "video" icon after their title (like the
+  //    mobile app, but landscape), in every list and in the player bar. Unknown ids are asked in one batch ──
+  const askVideo = new Set();
+  const inFlight = new Set();
+  let askBusy = false;
+  // a landscape frame with the app's own play triangle (play_xxxs from its sprite: flat back, curved sides)
+  const VIDEO_ICON = '<svg viewBox="0 0 20 16" width="20" height="16" aria-hidden="true"><rect x="1" y="1" width="18" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+    '<path transform="translate(3.85 2.68) scale(.6)" d="M6 3V9V14.75H7.5C7.5 14.75 11 11.5 15.5 9.75V9V8.25C11 6.5 7.5 3 7.5 3H6Z" fill="currentColor"/></svg>';
+  const trackIdOf = (a) => { const m = /[?&]trackId=(\d+)/.exec(a.getAttribute("href") || "") || /\/track\/(\d+)/.exec(a.getAttribute("href") || ""); return m ? m[1] : ""; };
+  const askVideos = async () => {
+    if (askBusy || !askVideo.size) return;
+    const env = appEnv();
+    const tr = env && env.tracksResource;
+    if (!tr || typeof tr.getTracksMeta !== "function") return;
+    const ids = [...askVideo].slice(0, 100);
+    ids.forEach((id) => { askVideo.delete(id); inFlight.add(id); });
+    askBusy = true;
+    try {
+      const r = await tr.getTracksMeta({ trackIds: ids });
+      const list = Array.isArray(r) ? r : (r && r.result) || [];
+      const got = new Set();
+      for (const t of list) {
+        if (!t || t.id == null) continue;
+        const id = String(t.id);
+        got.add(id);
+        indexSet(id, t.backgroundVideoUri);
+      }
+      ids.forEach((id) => { if (!got.has(id)) indexSet(id, ""); });
+    } catch { /* asked again on the next tick */ }
+    ids.forEach((id) => inFlight.delete(id));
+    askBusy = false;
+    updateVideoMarks();
+  };
+  const TITLE_SEL = 'a[data-test-id="TRACK_TITLE"]';
+  const updateVideoMarks = (titles) => {
+    if (!document.documentElement.hasAttribute("data-ym-track-video")) return;
+    for (const a of titles || document.querySelectorAll(TITLE_SEL)) {
+      const id = trackIdOf(a);
+      // the title box (with its line clamp) is the anchor: the mark goes right after it, before the 18+ mark
+      const holder = a.parentElement && a.parentElement.children.length === 1 ? a.parentElement : a;
+      let mark = holder.nextElementSibling && holder.nextElementSibling.classList.contains("ymmods-video-mark") ? holder.nextElementSibling : null;
+      const known = id ? indexGet(id) : "";
+      if (known === undefined) { if (!inFlight.has(id)) askVideo.add(id); continue; }
+      if (!known) { if (mark) mark.remove(); continue; }
+      if (!mark) {
+        mark = document.createElement("span");
+        mark.className = "ymmods-video-mark";
+        mark.innerHTML = VIDEO_ICON;
+        holder.after(mark);
+      }
+      mark.title = (QTEXT[lang()] || QTEXT.en).video;
+    }
+    if (askVideo.size) askVideos();
+  };
+  // The play queue already holds the full track meta (backgroundVideoUri included when there is one): every queued
+  // track is known without asking, and the videos of the playing and the next two tracks are fetched ahead
+  const queueMetas = () => {
+    let qs;
+    try { qs = playback().state.queueState; } catch { return null; }
+    const list = unbox(qs.entityList);
+    if (!Array.isArray(list)) return null;
+    const metas = list.slice(0, 500).map((item) => {
+      try { const e = unbox(item); const d = e && e.entity && unbox(e.entity.entityData); return (d && d.meta) || null; } catch { return null; }
+    });
+    return { metas, index: unbox(qs.index) };
+  };
+  let queueKey = "";
+  const harvestQueue = () => {
+    const q = queueMetas();
+    if (!q) return null;
+    const key = q.metas.length + ":" + q.index + ":" + (q.metas[0] && q.metas[0].id);
+    if (key !== queueKey) {
+      queueKey = key;
+      for (const m of q.metas) {
+        if (!m || m.id == null || typeof m.title !== "string") continue;
+        const id = String(m.id);
+        // the field is only there when the track has a video; full meta (with a duration) without it means none
+        if (m.backgroundVideoUri) indexSet(id, m.backgroundVideoUri);
+        else if (m.durationMs && indexGet(id) === undefined) indexSet(id, "");
+      }
+    }
+    return q;
+  };
+  const prefetchVideos = (s, q) => {
+    if (!document.documentElement.hasAttribute("data-ym-track-video")) return;
+    const ids = s.trackId ? [s.trackId] : [];
+    if (q && typeof q.index === "number") {
+      for (let k = 1; k <= 2; k++) { const m = q.metas[q.index + k]; if (m && m.id != null) ids.push(String(m.id)); }
+    }
+    for (const id of ids) { const u = indexGet(id); if (u) loadLocal(u); }
+  };
+  // marks on new rows at once: the observer runs before the next frame is painted, so a row of a known track shows
+  // up with its mark already there. Only the added nodes are looked at (the page changes all the time)
+  new MutationObserver((records) => {
+    if (!document.documentElement.hasAttribute("data-ym-track-video")) return;
+    const titles = [];
+    for (const r of records) {
+      for (const n of r.addedNodes) {
+        if (n.nodeType !== 1) continue;
+        if (n.matches(TITLE_SEL)) titles.push(n);
+        else if (n.firstElementChild) titles.push(...n.querySelectorAll(TITLE_SEL));
+      }
+    }
+    if (titles.length) { try { updateVideoMarks(titles); } catch {} }
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // ── My Vibe wave in the accent colour. The animation (a WebGL worker on an offscreen canvas) is set through its
+  //    controller's applySettings(): `hue` alone only shifts its rainbow, `customColors` ({top, middle, bottom} as
+  //    {h: degrees, s: 0–1, l: 0–1}, what the app's own vibe widget passes) makes it one colour. The controller is found
+  //    through the React tree and its applySettings is wrapped, so the accent's palette always goes in; turned off,
+  //    the app's own settings come back. (A CSS filter on that canvas breaks its compositing.) ──
+  const colorProbe = document.createElement("canvas").getContext("2d");
+  const accentHsl = () => {
+    const raw = getComputedStyle(document.body).getPropertyValue("--ym-controls-color-primary-default-enabled").trim();
+    if (!raw) return null;
+    colorProbe.fillStyle = "#000";
+    colorProbe.fillStyle = raw; // normalised to #rrggbb or rgba(…)
+    const c = colorProbe.fillStyle;
+    const m = /^#([0-9a-f]{6})$/i.exec(c) || /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c);
+    if (!m) return null;
+    const hex = m.length === 2 ? m[1] : [m[1], m[2], m[3]].map((n) => (+n).toString(16).padStart(2, "0")).join("");
+    return hexToHsl(hex);
+  };
+  // three shades of the accent, like the app builds them from a cover colour
+  const wavePalette = (c) => {
+    const h = Math.round(c.h), clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    // the accent itself is lightened for black icons on it: the wave takes deeper, more saturated shades of it
+    const sat = clamp(c.s + 0.1, 0.5, 1), l = clamp(c.l - 0.22, 0.38, 0.55);
+    return {
+      top: { h, s: clamp(sat + 0.15, 0, 1), l: clamp(l + 0.1, 0, 0.85) },
+      middle: { h, s: clamp(sat + 0.15, 0, 1), l: clamp(l + 0.05, 0, 0.8) },
+      bottom: { h, s: sat, l },
+    };
+  };
+  const vibeController = () => {
+    const el = $("VIBE_ANIMATION");
+    const key = el && Object.keys(el).find((k) => k.startsWith("__reactFiber"));
+    for (let f = key && el[key], i = 0; f && i < 6; f = f.return, i++) {
+      for (let h = f.memoizedState, j = 0; h && j < 60; h = h.next, j++) {
+        const v = h.memoizedState;
+        const c = Array.isArray(v) ? v[0] : v;
+        if (c && typeof c === "object" && typeof c.applySettings === "function" && c.worker) return c;
+      }
+    }
+    return null;
+  };
+  let waveApplied = "";
+  const updateWaveAccent = () => {
+    const on = document.documentElement.hasAttribute("data-ym-wave-accent");
+    if (!on && !waveApplied) return;
+    const ctrl = vibeController();
+    if (!ctrl) { waveApplied = ""; return; }
+    if (!ctrl.ymWrapped) {
+      const orig = ctrl.applySettings;
+      ctrl.ymOrig = orig;
+      ctrl.ymLast = {};
+      ctrl.applySettings = function (d) {
+        if (d && typeof d === "object") this.ymLast = { ...this.ymLast, ...d };
+        return orig.call(this, this.ymWave ? { ...d, hue: this.ymWave.top.h, customColors: this.ymWave } : d);
+      };
+      ctrl.ymWrapped = true;
+    }
+    const c = on ? accentHsl() : null;
+    const palette = c ? wavePalette(c) : null;
+    const key = (ctrl.ymId || (ctrl.ymId = Math.random().toString(36).slice(2))) + ":" + JSON.stringify(palette);
+    if (key === waveApplied) return;
+    waveApplied = palette ? key : "";
+    ctrl.ymWave = palette;
+    const last = ctrl.ymLast;
+    try {
+      ctrl.ymOrig.call(ctrl, palette ? { hue: palette.top.h, collectionHue: last.collectionHue, customColors: palette }
+        : { hue: last.hue, collectionHue: last.collectionHue, customColors: last.customColors || null });
+    } catch {}
+  };
+  // ── A livelier wave. The app feeds the animation 25 times a second with three band levels from its own analyser,
+  //    but that one has fftSize 32 (16 bins of 1.5 kHz each, no smoothing): its "low" and "middle" fall into the same
+  //    bin and hover around 0.7, so the wave barely follows the music. Here a finer analyser hangs off the app's one
+  //    (a branch: the sound is not touched) and gives real bands — bass 30–160 Hz, middle 0.3–2 kHz, highs 2.5–8 kHz —
+  //    each band measured against its own running level and spread, so hits stand out: fast attack, softer release.
+  //    html[data-ym-wave-react] = "app" (the app's own values) | "lively" | "max" ──
+  const WAVE_BANDS = [[30, 160], [300, 2000], [2500, 8000]];
+  const waveAudio = { node: null, src: null, data: null, avg: [0, 0, 0], dev: [0.05, 0.05, 0.05], out: [0, 0, 0] };
+  const waveStrength = () => { const m = document.documentElement.getAttribute("data-ym-wave-react"); return m === "max" ? 2 : m === "app" ? 0 : 1; };
+  // the app's audio context value (its analyser and the graph of the playing media), found once per controller
+  const audioContextValue = () => {
+    const el = $("VIBE_ANIMATION");
+    const key = el && Object.keys(el).find((k) => k.startsWith("__reactFiber"));
+    for (let f = key && el[key], i = 0; f && i < 10; f = f.return, i++) {
+      for (let c = f.dependencies && f.dependencies.firstContext; c; c = c.next) {
+        const v = c.memoizedValue;
+        if (v && v.analyser && typeof v.analyser.getAverageFrequencies === "function") return v;
+      }
+    }
+    return null;
+  };
+  const liveBands = (graph, strength) => {
+    if (!graph || !graph.analyserNode || !graph.context) return null;
+    if (waveAudio.src !== graph.analyserNode) {
+      try { if (waveAudio.src && waveAudio.node) waveAudio.src.disconnect(waveAudio.node); } catch {}
+      if (!waveAudio.node || waveAudio.node.context !== graph.context) {
+        waveAudio.node = graph.context.createAnalyser();
+        waveAudio.node.fftSize = 2048;
+        waveAudio.node.smoothingTimeConstant = 0.35;
+        waveAudio.data = new Uint8Array(waveAudio.node.frequencyBinCount);
+      }
+      graph.analyserNode.connect(waveAudio.node);
+      waveAudio.src = graph.analyserNode;
+    }
+    const data = waveAudio.data;
+    waveAudio.node.getByteFrequencyData(data);
+    const hz = graph.context.sampleRate / waveAudio.node.fftSize;
+    return WAVE_BANDS.map(([lo, hi], i) => {
+      const a = Math.max(1, Math.floor(lo / hz)), b = Math.min(data.length - 1, Math.ceil(hi / hz));
+      let sum = 0;
+      for (let k = a; k <= b; k++) sum += data[k];
+      const v = sum / ((b - a + 1) * 255);
+      // each band against its own running level and spread (~2 s): a loud bass and quiet highs both swing over
+      // the whole range, a hit stands out, and silence calms the wave down
+      const avg = (waveAudio.avg[i] = waveAudio.avg[i] ? waveAudio.avg[i] * 0.97 + v * 0.03 : v);
+      const dev = (waveAudio.dev[i] = waveAudio.dev[i] * 0.97 + Math.abs(v - avg) * 0.03);
+      const z = (v - avg) / Math.max(dev, 0.025);
+      const swing = 0.5 + z * (0.16 + 0.1 * strength);
+      const target = Math.min(1, Math.max(0, (0.2 * v + 0.8 * swing) * Math.min(1, avg / 0.08)));
+      const prev = waveAudio.out[i];
+      return (waveAudio.out[i] = prev + (target - prev) * (target > prev ? 0.8 : 0.35));
+    });
+  };
+  const updateWaveReact = () => {
+    const ctrl = vibeController();
+    if (!ctrl || ctrl.ymReactWrapped) return;
+    ctrl.ymReactWrapped = true;
+    const origF = ctrl.updateAudioFrequencies, origP = ctrl.playAnimation;
+    ctrl.updateAudioFrequencies = function (d) {
+      const strength = waveStrength();
+      if (strength) {
+        try {
+          // the app creates its analyser once playback starts: looked up until it is there
+          if (!(this.ymAudio && this.ymAudio.analyser)) this.ymAudio = audioContextValue();
+          const f = liveBands(this.ymAudio && this.ymAudio.analyser && this.ymAudio.analyser.currentGraph, strength);
+          if (f) d = { low: f[0], middle: f[1], high: f[2] };
+        } catch {}
+      }
+      return origF.call(this, d);
+    };
+    // the track's energy sets how much the wave moves overall: a little more of it, and a usual one for tracks
+    // the service gave no parameters
+    ctrl.playAnimation = function (d) {
+      const strength = waveStrength();
+      if (strength && d && typeof d === "object") {
+        const e = typeof d.energy === "number" ? d.energy : 0.65;
+        d = { ...d, energy: Math.min(1, e + 0.1 * strength) };
+      }
+      return origP.call(this, d);
+    };
   };
 
   // ── My Vibe player bar: repeat button (the "…" menu item is hidden), a copy of the like button ──
@@ -1089,6 +1638,11 @@
     checkVibeAfter();
     updateVibeAfterButton();
     updateBadge(s);
+    try { prefetchVideos(s, harvestQueue()); } catch {}
+    try { updateTrackVideo(s); } catch {}
+    try { updateVideoMarks(); } catch {}
+    updateWaveAccent();
+    try { updateWaveReact(); } catch {}
     checkMenus();
     updateRepeatButton();
     updateMiniButton();

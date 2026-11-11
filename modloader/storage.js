@@ -12,7 +12,7 @@ const DOWNLOADS = "File System";
 const CACHES = ["Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache"];
 // Not session data: the app's own files (in the default place both share one folder) and per-launch files
 // Chromium also writes next to the profile (Local State, DevToolsActivePort, lockfile); never copied either way
-const NOT_SESSION = new Set(["modloader", "mods", "logs", "config.json", "Local State", "Crashpad", ".updaterId", "DevToolsActivePort", "Dictionaries", "lockfile"]);
+const NOT_SESSION = new Set(["modloader", "mods", "logs", "config.json", "Local State", "Crashpad", ".updaterId", "DevToolsActivePort", "Dictionaries", "lockfile", "ymmods-cache"]);
 
 const dirStats = async (dir) => {
   let bytes = 0, files = 0;
